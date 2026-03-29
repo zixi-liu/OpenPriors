@@ -22,11 +22,14 @@ router = APIRouter(prefix="/api/voice", tags=["voice"])
 
 # --- Socratic Q&A ---
 
-FIRST_QUESTION_PROMPT = """You are a Socratic learning coach. The user wants to share something they recently learned.
+FIRST_QUESTION_PROMPT = """You are a reflective learning coach. The user wants to share something they recently learned.
 
-Generate the FIRST question to ask them. It should be open-ended and inviting, like:
-- "What did you learn recently that excited you?"
-- "What's something you read or heard that made you think differently?"
+Generate the FIRST question to ask them. Focus on what shifted their thinking. Examples:
+- "What changed how you think recently?"
+- "What's something you learned that surprised you or challenged what you believed?"
+- "What idea have you encountered recently that you can't stop thinking about?"
+
+Keep it warm, short, and conversational.
 
 Return JSON:
 {{"question": "your question here"}}
@@ -34,19 +37,21 @@ Return JSON:
 Return ONLY valid JSON."""
 
 
-FOLLOWUP_QUESTION_PROMPT = """You are a Socratic learning coach helping someone deeply process what they learned.
+FOLLOWUP_QUESTION_PROMPT = """You are a reflective learning coach helping someone deeply process what they learned.
 
 Here is the conversation so far:
 {conversation}
 
-Based on their answers, generate the NEXT probing question. Use Socratic techniques:
-- Ask them to explain WHY this matters to them
-- Ask for a concrete example or scenario where they'd apply this
-- Challenge assumptions gently ("What would happen if the opposite were true?")
-- Ask how this connects to something they already know
-- Ask what they'd do differently starting tomorrow
+Based on their answers, generate the NEXT probing question. Use these reflection techniques:
+- "Where in your life does this principle already show up? Where is it missing?"
+- "What would change if you actually lived by this idea for a week?"
+- "What's the hardest part about applying this? What gets in the way?"
+- "Who do you know that already does this well? What do they do differently?"
+- "If you could only change one small thing tomorrow based on this, what would it be?"
 
-This is question {question_number} of 3. {"Make this the final question — ask something that helps them commit to a specific action or practice." if question_number == 3 else ""}
+Pick the technique that best fits what they just said. Don't repeat a style already used.
+
+This is question {question_number} of 3. {"Make this the final question — help them commit to one specific, small action they can take this week." if question_number == 3 else ""}
 
 Return JSON:
 {{"question": "your question here"}}
