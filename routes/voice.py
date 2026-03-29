@@ -2,9 +2,7 @@
 Voice Capture Routes
 
 Record what you learned by talking. AI transcribes and extracts priors.
-Two modes:
-1. Audio upload — send a WAV/MP3, Gemini transcribes + extracts in one call
-2. Transcript — frontend does STT, sends text, we extract priors
+Includes Socratic Q&A flow that probes what user learned.
 """
 
 import base64
@@ -21,6 +19,89 @@ from core.storage import save_priors
 
 router = APIRouter(prefix="/api/voice", tags=["voice"])
 
+
+# --- Socratic Q&A ---
+
+FIRST_QUESTION_PROMPT = """You are a Socratic learning coach. The user wants to share something they recently learned.
+
+Generate the FIRST question to ask them. It should be open-ended and inviting, like:
+- "What did you learn recently that excited you?"
+- "What's something you read or heard that made you think differently?"
+
+Return JSON:
+{{"question": "your question here"}}
+
+Return ONLY valid JSON."""
+
+
+FOLLOWUP_QUESTION_PROMPT = """You are a Socratic learning coach helping someone deeply process what they learned.
+
+Here is the conversation so far:
+{conversation}
+
+Based on their answers, generate the NEXT probing question. Use Socratic techniques:
+- Ask them to explain WHY this matters to them
+- Ask for a concrete example or scenario where they'd apply this
+- Challenge assumptions gently ("What would happen if the opposite were true?")
+- Ask how this connects to something they already know
+- Ask what they'd do differently starting tomorrow
+
+This is question {question_number} of 3. {"Make this the final question — ask something that helps them commit to a specific action or practice." if question_number == 3 else ""}
+
+Return JSON:
+{{"question": "your question here"}}
+
+Return ONLY valid JSON."""
+
+
+class SocraticRequest(BaseModel):
+    conversation: List[Dict[str, str]]  # [{question, answer}, ...]
+    question_number: int
+
+
+@router.post("/socratic/first-question")
+async def get_first_question():
+    """Get the first Socratic question to start the Q&A."""
+    try:
+        result = await complete_json(FIRST_QUESTION_PROMPT)
+        return JSONResponse({
+            "success": True,
+            "question": result.get("question", "What did you learn recently that excited you?"),
+        })
+    except Exception as e:
+        return JSONResponse({
+            "success": True,
+            "question": "What did you learn recently that excited you?",
+        })
+
+
+@router.post("/socratic/next-question")
+async def get_next_question(request: SocraticRequest):
+    """Get the next Socratic follow-up question based on conversation so far."""
+    try:
+        convo_text = "\n".join([
+            f"Q: {qa['question']}\nA: {qa['answer']}"
+            for qa in request.conversation
+        ])
+
+        prompt = FOLLOWUP_QUESTION_PROMPT.format(
+            conversation=convo_text,
+            question_number=request.question_number,
+        )
+
+        result = await complete_json(prompt)
+        return JSONResponse({
+            "success": True,
+            "question": result.get("question", "Can you tell me more about that?"),
+        })
+    except Exception as e:
+        return JSONResponse({
+            "success": True,
+            "question": "Can you tell me more about that?",
+        })
+
+
+# --- Audio capture ---
 
 VOICE_EXTRACT_PROMPT = """You are an expert at helping people retain and apply what they learn.
 
@@ -60,7 +141,6 @@ Return ONLY valid JSON."""
 
 
 class VoiceTranscriptRequest(BaseModel):
-    """When frontend handles STT and sends text."""
     transcript: str
     source: Optional[str] = None
 
@@ -80,13 +160,11 @@ async def capture_from_audio(
         audio_bytes = await audio.read()
         audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
 
-        # Detect content type
         content_type = audio.content_type or "audio/wav"
         audio_data_url = f"data:{content_type};base64,{audio_base64}"
 
         source_hint = f"\nThe user mentioned they were learning from: {source}" if source else ""
 
-        # Build multimodal message with audio
         from litellm import acompletion
         from core.llm import _set_api_key
         from core.config import get_model
@@ -101,7 +179,6 @@ async def capture_from_audio(
         ]
 
         model = get_model()
-        # Use Gemini for audio (best multimodal support)
         if "gemini" not in model:
             model = "gemini/gemini-2.5-flash"
 
