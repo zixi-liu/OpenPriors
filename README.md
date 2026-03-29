@@ -35,7 +35,7 @@ OpenPriors closes the gap between **knowing** and **doing**.
 ## How It Works
 
 ```
-1. Capture    →  Upload a book, paste a URL, or talk about what you learned
+1. Capture    →  Upload a book, paste a YouTube/article URL, or talk about what you learned
 2. Extract    →  AI distills actionable principles from your material
 3. Synthesize →  AI agents help you connect learnings to your real life
 4. Practice   →  Goals with due dates, Slack reminders, and check-ins
