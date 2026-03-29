@@ -121,6 +121,7 @@ import { createContext, useContext } from 'react'
 
 interface ChatContextType {
   sessionId: string | null
+  sessionTitle: string
   messages: Message[]
   sessionPriors: any[]
   input: string
@@ -141,6 +142,7 @@ export function useChatContext() {
 export default function ChatProvider({ children, existingSessionId, onSessionReady }: { children: React.ReactNode; existingSessionId?: string; onSessionReady?: (id: string) => void }) {
   const [sessionId, setSessionId] = useState<string | null>(existingSessionId || null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [sessionTitle, setSessionTitle] = useState('')
   const [sessionPriors, setSessionPriors] = useState<any[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -157,6 +159,7 @@ export default function ChatProvider({ children, existingSessionId, onSessionRea
           if (data.success && data.messages) {
             setSessionId(existingSessionId)
             onSessionReady?.(existingSessionId)
+            if (data.session?.title) setSessionTitle(data.session.title)
             setMessages(data.messages.map((m: any) => ({
               role: m.role,
               content: m.content,
@@ -227,7 +230,7 @@ export default function ChatProvider({ children, existingSessionId, onSessionRea
   }
 
   return (
-    <ChatContext.Provider value={{ sessionId, messages, sessionPriors, input, setInput, loading, sendMessage, selectOption }}>
+    <ChatContext.Provider value={{ sessionId, sessionTitle, messages, sessionPriors, input, setInput, loading, sendMessage, selectOption }}>
       {children}
     </ChatContext.Provider>
   )

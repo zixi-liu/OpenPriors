@@ -228,6 +228,7 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
 
   return (
     <ChatProvider existingSessionId={sessionId || undefined} onSessionReady={(id) => { chatSessionIdRef.current = id }}>
+    <SessionTitleSync titleRef={titleRef} setTitleValue={setTitleValue} />
     <div className="h-full flex flex-col">
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
@@ -239,7 +240,17 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
             contentEditable
             suppressContentEditableWarning
             spellCheck={false}
-            onBlur={() => setTitleValue(titleRef.current?.textContent || '')}
+            onBlur={() => {
+              const text = titleRef.current?.textContent || ''
+              setTitleValue(text)
+              if (text.trim() && chatSessionIdRef.current) {
+                fetch(`/api/osmosis/sessions/${chatSessionIdRef.current}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ title: text.trim() }),
+                }).catch(() => {})
+              }
+            }}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); titleRef.current?.blur() } }}
             className="text-4xl font-bold outline-none cursor-text p-0 m-0 empty:before:content-['New_Page'] empty:before:opacity-20"
             style={{ color: 'var(--op-font-color)' }}
@@ -459,6 +470,21 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
     </div>
     </ChatProvider>
   )
+}
+
+function useSessionTitle(titleRef: React.RefObject<HTMLHeadingElement | null>, setTitleValue: (v: string) => void) {
+  const { sessionTitle } = useChatContext()
+  useEffect(() => {
+    if (sessionTitle && sessionTitle !== 'New Page' && titleRef.current) {
+      titleRef.current.textContent = sessionTitle
+      setTitleValue(sessionTitle)
+    }
+  }, [sessionTitle])
+}
+
+function SessionTitleSync({ titleRef, setTitleValue }: { titleRef: React.RefObject<HTMLHeadingElement | null>; setTitleValue: (v: string) => void }) {
+  useSessionTitle(titleRef, setTitleValue)
+  return null
 }
 
 function RestoredPriors() {
