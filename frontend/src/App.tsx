@@ -18,33 +18,39 @@ export default function App() {
       .catch(() => setConfigured(false))
   }, [])
 
-  useEffect(() => {
-    fetch('/api/assets')
+  const fetchAssets = () => {
+    fetch('/api/assets/materials')
       .then(r => r.json())
       .then(data => {
-        if (data.success && data.priors) {
-          const uniqueSources = new Map<string, string>()
-          for (const p of data.priors) {
-            if (p.source_title && !uniqueSources.has(p.source_title)) {
-              uniqueSources.set(p.source_title, p.id)
-            }
-          }
+        if (data.success && data.materials) {
           setMaterials(
-            Array.from(uniqueSources.entries()).map(([title, id]) => ({
-              id,
-              title,
+            data.materials.map((m: { id: string; title: string }) => ({
+              id: m.id,
+              title: m.title,
               isActive: true,
             }))
           )
         }
       })
       .catch(() => {})
-  }, [])
+  }
+
+  useEffect(() => { fetchAssets() }, [])
 
   const toggleMaterial = (id: string) => {
     setMaterials(prev =>
       prev.map(m => m.id === id ? { ...m, isActive: !m.isActive } : m)
     )
+  }
+
+  const deleteMaterial = async (id: string) => {
+    try {
+      const res = await fetch(`/api/assets/materials/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        setMaterials(prev => prev.filter(m => m.id !== id))
+      }
+    } catch { /* silently fail */ }
   }
 
   if (configured === null) {
@@ -88,6 +94,7 @@ export default function App() {
           materials={materials}
           sessions={sessions}
           onToggleMaterial={toggleMaterial}
+          onDeleteMaterial={deleteMaterial}
         />
         <main className="flex-1 overflow-auto">
           <Routes>

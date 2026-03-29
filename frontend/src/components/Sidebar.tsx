@@ -103,14 +103,14 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* My Materials */}
+      {/* My Assets */}
       {!isCollapsed && (
         <div className="px-2 pb-2 mt-3">
           <div className="px-1 mb-1">
-            <span className="text-sm font-bold tracking-wider" style={{ opacity: 0.7 }}>My Materials</span>
+            <span className="text-sm font-bold tracking-wider" style={{ opacity: 0.7 }}>My Assets</span>
           </div>
           {materials.length === 0 ? (
-            <p className="text-xs px-1" style={{ opacity: 0.3 }}>No materials yet</p>
+            <p className="text-xs px-1" style={{ opacity: 0.3 }}>No assets yet</p>
           ) : (
             <div className="space-y-0.5 mt-2 max-h-[11rem] overflow-y-auto scrollbar-hide">
               {materials.map((material) => (

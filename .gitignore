@@ -7,3 +7,4 @@ build/
 .venv/
 node_modules/
 knowledge_cache/
+.DS_Store

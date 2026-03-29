@@ -27,6 +27,7 @@ export default function CapturePage() {
 
   // Link modal
   const [linkModalOpen, setLinkModalOpen] = useState(false)
+  const [linkType, setLinkType] = useState<'youtube' | 'article'>('youtube')
   const [linkUrl, setLinkUrl] = useState('')
   const linkInputRef = useRef<HTMLInputElement>(null)
 
@@ -249,14 +250,14 @@ export default function CapturePage() {
         </div>
 
         {/* Action buttons */}
-        <div className="ml-1 flex items-center gap-3 flex-wrap">
-          {/* Upload Material dropdown */}
+        <div className="ml-1 flex items-center gap-3">
+          {/* Add something new — dropdown */}
           <div className="relative" ref={uploadDropdownRef}>
             <button
               onClick={() => setIsUploadDropdownOpen(!isUploadDropdownOpen)}
               disabled={isAnalyzing}
-              className="flex items-center gap-2 px-4 py-2.5 border border-[#E3E2E0] rounded-lg text-sm hover:bg-[#F7F7F5] transition-colors disabled:opacity-50 min-w-[170px]"
-              style={{ color: 'var(--op-font-color)' }}
+              className="flex items-center gap-2 px-4 py-2.5 border border-[#E3E2E0] rounded-lg text-sm hover:bg-[#F7F7F5] transition-colors disabled:opacity-50"
+              style={{ color: 'var(--op-font-color)', minWidth: 200 }}
             >
               {isAnalyzing ? (
                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -265,40 +266,49 @@ export default function CapturePage() {
                 </svg>
               ) : (
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 10V3m0 0L5 6m3-3l3 3M3 13h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               )}
-              {isAnalyzing ? 'Analyzing...' : 'Upload Material'}
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className={`transition-transform ${isUploadDropdownOpen ? 'rotate-180' : ''}`}>
+              {isAnalyzing ? 'Analyzing...' : 'Add something new'}
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className={`ml-auto transition-transform ${isUploadDropdownOpen ? 'rotate-180' : ''}`}>
                 <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
             {isUploadDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1 z-50">
+              <div className="fixed w-56 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1"
+                style={{
+                  zIndex: 9999,
+                  top: uploadDropdownRef.current ? uploadDropdownRef.current.getBoundingClientRect().bottom + 4 : 0,
+                  left: uploadDropdownRef.current ? uploadDropdownRef.current.getBoundingClientRect().left : 0,
+                }}>
                 <button onClick={() => { fileInputRef.current?.click(); setIsUploadDropdownOpen(false) }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-[#F7F7F5] transition-colors" style={{ color: 'var(--op-font-color)' }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 1h5l4 4v9a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" /><path d="M9 1v4h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   Upload PDF
                 </button>
-                <button onClick={() => { setLinkModalOpen(true); setIsUploadDropdownOpen(false) }}
+                <button onClick={() => { setLinkType('youtube'); setLinkModalOpen(true); setIsUploadDropdownOpen(false) }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-[#F7F7F5] transition-colors" style={{ color: 'var(--op-font-color)' }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14.4 4.6s-.2-1.2-.7-1.7c-.6-.7-1.3-.7-1.7-.7C9.6 2 8 2 8 2s-1.6 0-4 .2c-.3 0-1 0-1.7.7-.5.5-.6 1.7-.6 1.7S1.5 6 1.5 7.4v1.2c0 1.4.2 2.8.2 2.8s.2 1.2.7 1.7c.6.7 1.4.7 1.8.7 1.3.1 4.8.2 4.8.2s2.4 0 4-.2c.3 0 1 0 1.7-.7.5-.5.6-1.7.6-1.7s.2-1.4.2-2.8V7.4c0-1.4-.1-2.8-.1-2.8z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" /><path d="M6.5 10V6l4 2-4 2z" fill="currentColor" /></svg>
+                  Paste YouTube Link
+                </button>
+                <button onClick={() => { setLinkType('article'); setLinkModalOpen(true); setIsUploadDropdownOpen(false) }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-[#F7F7F5] transition-colors" style={{ color: 'var(--op-font-color)' }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.5 9.5l3-3M7 11l-1.6 1.6a2.12 2.12 0 01-3-3L4 8m5-3l1.6-1.6a2.12 2.12 0 013 3L12 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  Paste Website Link
+                  Paste Article Link
                 </button>
               </div>
             )}
           </div>
 
-          <button onClick={() => { setStoryModalOpen(true); startStoryFlow() }}
-            className="flex items-center gap-2 px-4 py-2.5 border border-[#E3E2E0] rounded-lg text-sm hover:bg-[#F7F7F5] transition-colors" style={{ color: 'var(--op-font-color)' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.5a3.5 3.5 0 013.5 3.5v2a3.5 3.5 0 11-7 0V6A3.5 3.5 0 018 2.5z" stroke="currentColor" strokeWidth="1.5" /><path d="M5 11.5A4.5 4.5 0 008 13a4.5 4.5 0 003-1.5M8 13v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-            Share What You Learned
-          </button>
-
-          <button onClick={() => setOsmosisModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 border border-[#E3E2E0] rounded-lg text-sm hover:bg-[#F7F7F5] transition-colors" style={{ color: 'var(--op-font-color)' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M13 9l-1.5 1.5L13 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            Osmosis Session
+          {/* Share a Learning */}
+          <button
+            onClick={() => { setStoryModalOpen(true); startStoryFlow() }}
+            disabled={isAnalyzing}
+            className="flex items-center gap-2 px-4 py-2.5 border border-[#E3E2E0] rounded-lg text-sm hover:bg-[#F7F7F5] transition-colors disabled:opacity-50"
+            style={{ color: 'var(--op-font-color)', minWidth: 200 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8v0M4 5.5v5M6 3.5v9M8 5v6M10 3.5v9M12 5.5v5M14 8v0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+            Talk about a learning
           </button>
         </div>
 
@@ -332,22 +342,29 @@ export default function CapturePage() {
           <div className="absolute inset-0 bg-black/40" onClick={() => !isAnalyzing && setLinkModalOpen(false)} />
           <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold" style={{ color: 'var(--op-font-color)' }}>Paste Website Link</h3>
+              <h3 className="text-lg font-semibold" style={{ color: 'var(--op-font-color)' }}>
+                {linkType === 'youtube' ? 'Paste YouTube Link' : 'Paste Article Link'}
+              </h3>
               <button onClick={() => { setLinkModalOpen(false); setLinkUrl('') }} className="p-1" style={{ color: 'var(--op-font-color)', opacity: 0.4 }}>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
               </button>
             </div>
-            <p className="text-sm mb-4" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>Paste an article, blog post, or any web page</p>
+            <p className="text-sm mb-4" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>
+              {linkType === 'youtube'
+                ? 'We\'ll extract the transcript and pull out key insights'
+                : 'Works with Goodreads, Letterboxd, IMDB, blogs, and more'}
+            </p>
             <input ref={linkInputRef} type="url" value={linkUrl} onChange={e => setLinkUrl(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && linkUrl.trim()) handleLinkSubmit() }}
-              placeholder="https://..." disabled={isAnalyzing}
+              placeholder={linkType === 'youtube' ? 'https://youtube.com/watch?v=...' : 'https://www.goodreads.com/book/show/...'} disabled={isAnalyzing}
               className="w-full text-sm px-4 py-3 rounded-lg border border-[#E3E2E0] focus:outline-none focus:border-gray-400 disabled:bg-[#F7F7F5]" />
             <div className="flex justify-end gap-3 mt-5">
               <button onClick={() => { setLinkModalOpen(false); setLinkUrl('') }} className="px-4 py-2 text-sm rounded-lg hover:bg-[#F7F7F5]" style={{ color: 'var(--op-font-color)' }}>Cancel</button>
               <button onClick={handleLinkSubmit} disabled={!linkUrl.trim() || isAnalyzing}
-                className="px-5 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-40 flex items-center gap-2">
+                className="px-5 py-2 text-sm font-medium rounded-lg border border-[#E3E2E0] hover:bg-[#F0EFED] disabled:opacity-40 flex items-center gap-2"
+                style={{ color: 'var(--op-font-color)' }}>
                 {isAnalyzing && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>}
-                {isAnalyzing ? 'Adding...' : 'Extract'}
+                {isAnalyzing ? 'Adding...' : 'Add'}
               </button>
             </div>
           </div>
@@ -358,28 +375,33 @@ export default function CapturePage() {
       {storyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => !storyRecording && !storyGenerating && closeStoryModal()} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 flex flex-col" style={{ height: '400px' }}>
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 flex flex-col" style={{ height: '320px' }}>
             <div className="flex items-center justify-between px-6 pt-5 pb-3">
               <div>
-                <h3 className="text-lg font-semibold" style={{ color: 'var(--op-font-color)' }}>Share What You Learned</h3>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--op-font-color)', opacity: 0.4 }}>Question {storyQA.length + (storyComplete ? 0 : 1)} of 3</p>
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--op-font-color)' }}>Talk about a learning</h3>
+                {/* Progress dots */}
+                <div className="flex gap-1.5 mt-2">
+                  {[1, 2, 3].map(step => (
+                    <div
+                      key={step}
+                      className="h-1 rounded-full transition-all"
+                      style={{
+                        width: step <= storyQA.length + (storyComplete ? 0 : 1) ? 24 : 16,
+                        backgroundColor: step <= storyQA.length
+                          ? 'var(--op-font-color)'
+                          : step === storyQA.length + 1 && !storyComplete
+                            ? 'var(--op-font-color)'
+                            : 'var(--op-font-color)',
+                        opacity: step <= storyQA.length ? 0.6 : step === storyQA.length + 1 && !storyComplete ? 0.3 : 0.1,
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
               <button onClick={closeStoryModal} disabled={storyGenerating} className="p-1 disabled:opacity-50" style={{ color: 'var(--op-font-color)', opacity: 0.4 }}>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
               </button>
             </div>
-
-            {storyQA.length > 0 && (
-              <div className="px-6 max-h-40 overflow-y-auto space-y-3 pb-3 border-b border-[#E3E2E0]">
-                {storyQA.map((qa, i) => (
-                  <div key={i} className="space-y-1">
-                    <p className="text-xs font-medium" style={{ color: 'var(--op-font-color)', opacity: 0.4 }}>Q{i + 1}</p>
-                    <p className="text-sm" style={{ color: 'var(--op-font-color)' }}>{qa.question}</p>
-                    <p className="text-sm italic" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>{qa.answer}</p>
-                  </div>
-                ))}
-              </div>
-            )}
 
             <div className="px-6 py-5 flex-1">
               {storyLoadingQ ? (
@@ -399,23 +421,30 @@ export default function CapturePage() {
                   </button>
                 </div>
               ) : storyCurrentQ ? (
-                <div className="space-y-5">
+                <div className="relative h-full">
+                  {/* Question — top */}
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--op-font-color)' }}>{storyCurrentQ}</p>
+
+                  {/* Transcript — middle, absolute with scroll */}
                   {storyTranscript && (
-                    <p className="text-sm italic bg-[#F7F7F5] rounded-lg px-3 py-2" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>{storyTranscript}</p>
+                    <div className="absolute top-10 left-0 right-0 bottom-24 overflow-y-auto scrollbar-hide">
+                      <p className="text-sm italic" style={{ color: 'var(--op-font-color)', opacity: 0.4 }}>{storyTranscript}</p>
+                    </div>
                   )}
-                  <div className="flex items-center justify-center gap-4">
+
+                  {/* Mic + Next — absolute bottom */}
+                  <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-4">
                     <button onClick={toggleRecording}
-                      className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
-                        storyRecording ? 'bg-red-50 text-red-500 ring-4 ring-red-100' : 'bg-[#F7F7F5] hover:bg-[#EDEDEC]'
-                      }`} style={storyRecording ? {} : { color: 'var(--op-font-color)' }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3a4 4 0 014 4v4a4 4 0 11-8 0V7a4 4 0 014-4z" stroke="currentColor" strokeWidth="1.5" /><path d="M6 13a6 6 0 006 6m6-6a6 6 0 01-6 6m0 0v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                        storyRecording ? 'bg-[#EDEDEC]' : 'bg-[#F7F7F5] hover:bg-[#EDEDEC]'
+                      }`} style={{ color: 'var(--op-font-color)' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3a4 4 0 014 4v4a4 4 0 11-8 0V7a4 4 0 014-4z" stroke="currentColor" strokeWidth="1.5" /><path d="M6 13a6 6 0 006 6m6-6a6 6 0 01-6 6m0 0v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
                     </button>
                     {storyTranscript && !storyRecording && (
                       <button onClick={submitAnswer} className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800">Next</button>
                     )}
                   </div>
-                  <p className="text-center text-xs" style={{ color: 'var(--op-font-color)', opacity: 0.3 }}>
+                  <p className="absolute bottom-0 left-0 right-0 text-center text-xs" style={{ color: 'var(--op-font-color)', opacity: 0.3 }}>
                     {storyRecording ? 'Listening... tap to stop' : 'Tap mic to answer'}
                   </p>
                 </div>

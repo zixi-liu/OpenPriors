@@ -15,7 +15,7 @@ from typing import Optional, List
 
 from core.llm import complete, complete_json, parse_json
 from core.extractor import extract_priors, extract_from_url
-from core.storage import save_priors, get_all_priors, search_priors, get_prior
+from core.storage import save_priors, save_material, get_material, get_all_materials, delete_material, get_all_priors, search_priors, get_prior
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
@@ -37,15 +37,23 @@ class UploadURLRequest(BaseModel):
 async def upload_text(request: UploadTextRequest):
     try:
         result = await extract_priors(request.content, source_hint=request.source or "")
+        title = result.get("title", request.source or "Untitled")
+        material_id = save_material(
+            title=title,
+            content=request.content,
+            source_type="text",
+            summary=result.get("summary", ""),
+        )
         priors = result.get("priors", [])
-        ids = save_priors(priors, source_title=result.get("title", ""))
+        ids = save_priors(priors, source_title=title, material_id=material_id)
         return JSONResponse({
             "success": True,
-            "title": result.get("title", ""),
+            "title": title,
             "summary": result.get("summary", ""),
             "priors_count": len(ids),
             "priors": priors,
             "ids": ids,
+            "material_id": material_id,
         })
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -60,15 +68,25 @@ async def upload_url(request: UploadURLRequest):
             return JSONResponse({"success": False, "error": "Could not extract content from URL"})
 
         result = await extract_priors(content, source_hint=request.url)
+        title = extracted.get("title", "") or result.get("title", "")
+        material_id = save_material(
+            title=title,
+            content=content,
+            source_type="youtube" if "youtu" in request.url else "url",
+            url=request.url,
+            summary=result.get("summary", ""),
+            author=extracted.get("author", ""),
+        )
         priors = result.get("priors", [])
-        ids = save_priors(priors, source_title=result.get("title", ""))
+        ids = save_priors(priors, source_title=title, material_id=material_id)
         return JSONResponse({
             "success": True,
-            "title": result.get("title", ""),
+            "title": title,
             "summary": result.get("summary", ""),
             "priors_count": len(ids),
             "priors": priors,
             "ids": ids,
+            "material_id": material_id,
         })
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -80,15 +98,23 @@ async def upload_pdf(file: UploadFile = File(...)):
         content = await file.read()
         text = content.decode("utf-8", errors="ignore")
         result = await extract_priors(text, source_hint=file.filename or "uploaded PDF")
+        title = result.get("title", file.filename or "Uploaded PDF")
+        material_id = save_material(
+            title=title,
+            content=text,
+            source_type="pdf",
+            summary=result.get("summary", ""),
+        )
         priors = result.get("priors", [])
-        ids = save_priors(priors, source_title=result.get("title", ""))
+        ids = save_priors(priors, source_title=title, material_id=material_id)
         return JSONResponse({
             "success": True,
-            "title": result.get("title", ""),
+            "title": title,
             "summary": result.get("summary", ""),
             "priors_count": len(ids),
             "priors": priors,
             "ids": ids,
+            "material_id": material_id,
         })
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
@@ -163,27 +189,111 @@ class GenerateRequest(BaseModel):
     conversation: List[QAPair]
 
 
+COMPILE_LEARNING_PROMPT = """You are helping someone organize their thoughts about something they recently learned.
+
+They just had a casual voice conversation answering a few questions. The transcript below may have speech-to-text errors — use context to infer what they likely meant.
+
+Raw Q&A transcript:
+---
+{conversation}
+---
+
+Rewrite this into a clear, first-person learning reflection (150-400 words) that:
+1. Focuses on WHAT they learned and WHY it matters to them
+2. Captures any specific sources they mentioned (book titles, movies, podcasts, articles, people)
+3. Includes their personal reflections and how it connects to their life
+4. Fixes any obvious speech-to-text errors (e.g. "atomic habits" not "a tomic have its")
+5. Preserves their voice and tone — don't make it formal, keep it natural
+6. Organizes scattered thoughts into a coherent narrative
+
+Return JSON:
+{{
+  "title": "short title (3-6 words)",
+  "reflection": "the rewritten learning reflection",
+  "sources_mentioned": ["list of any books, movies, podcasts, articles, or people mentioned"]
+}}
+
+Return ONLY valid JSON."""
+
+
 @router.post("/voice/generate")
 async def voice_generate(req: GenerateRequest):
-    """Turn the voice Q&A conversation into extracted priors."""
+    """Compile voice Q&A into a learning reflection, save as material, then extract priors."""
     try:
-        combined = "\n\n".join([
+        raw_conversation = "\n\n".join([
             f"Q: {qa.question}\nA: {qa.answer}"
             for qa in req.conversation
         ])
-        result = await extract_priors(combined, source_hint="voice reflection")
+
+        # Step 1: Reorganize into a coherent learning reflection
+        compiled = await complete_json(
+            COMPILE_LEARNING_PROMPT.format(conversation=raw_conversation)
+        )
+        reflection = compiled.get("reflection", raw_conversation)
+        title = compiled.get("title", "Voice Reflection")
+        sources = compiled.get("sources_mentioned", [])
+        source_hint = ", ".join(sources) if sources else "voice reflection"
+
+        # Step 2: Save the compiled reflection as a material
+        material_id = save_material(
+            title=title,
+            content=reflection,
+            source_type="voice",
+            summary=f"Sources: {source_hint}" if sources else "",
+        )
+
+        # Step 3: Extract priors from the clean reflection
+        result = await extract_priors(reflection, source_hint=source_hint)
         priors = result.get("priors", [])
-        ids = save_priors(priors, source_title=result.get("title", ""))
+        ids = save_priors(priors, source_title=title, material_id=material_id)
+
         return JSONResponse({
             "success": True,
-            "title": result.get("title", ""),
+            "title": title,
             "summary": result.get("summary", ""),
+            "reflection": reflection,
+            "sources_mentioned": sources,
             "priors_count": len(ids),
             "priors": priors,
             "ids": ids,
+            "material_id": material_id,
         })
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+# ============================================================
+# Materials
+# ============================================================
+
+@router.get("/materials")
+async def list_materials():
+    materials = get_all_materials()
+    # Return without full content for the list view
+    return JSONResponse({
+        "success": True,
+        "materials": [
+            {k: v for k, v in m.items() if k != "content"}
+            for m in materials
+        ],
+        "count": len(materials),
+    })
+
+
+@router.get("/materials/{material_id}")
+async def get_material_detail(material_id: str):
+    material = get_material(material_id)
+    if not material:
+        return JSONResponse({"success": False, "error": "Not found"}, status_code=404)
+    return JSONResponse({"success": True, "material": material})
+
+
+@router.delete("/materials/{material_id}")
+async def delete_material_endpoint(material_id: str):
+    deleted = delete_material(material_id)
+    if not deleted:
+        return JSONResponse({"success": False, "error": "Not found"}, status_code=404)
+    return JSONResponse({"success": True})
 
 
 # ============================================================

@@ -21,6 +21,18 @@ def _get_db() -> sqlite3.Connection:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     conn.execute("""
+        CREATE TABLE IF NOT EXISTS materials (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            url TEXT,
+            source_type TEXT NOT NULL,
+            content TEXT NOT NULL,
+            summary TEXT,
+            author TEXT,
+            created_at TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS priors (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -29,11 +41,13 @@ def _get_db() -> sqlite3.Connection:
             trigger_context TEXT,
             source TEXT,
             source_title TEXT,
+            material_id TEXT,
             file_path TEXT,
             created_at TEXT NOT NULL,
             last_practiced TEXT,
             practice_count INTEGER DEFAULT 0,
-            status TEXT DEFAULT 'active'
+            status TEXT DEFAULT 'active',
+            FOREIGN KEY (material_id) REFERENCES materials(id)
         )
     """)
     conn.execute("""
@@ -44,7 +58,57 @@ def _get_db() -> sqlite3.Connection:
     return conn
 
 
-def save_prior(prior: Dict[str, Any], source_title: str = "") -> str:
+def save_material(
+    title: str,
+    content: str,
+    source_type: str = "url",
+    url: str = "",
+    summary: str = "",
+    author: str = "",
+) -> str:
+    """Save a learning material (transcript, article text, etc.) and return its ID."""
+    material_id = str(uuid.uuid4())[:8]
+    now = datetime.now().isoformat()
+    conn = _get_db()
+    conn.execute(
+        """INSERT INTO materials (id, title, url, source_type, content, summary, author, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (material_id, title, url, source_type, content, summary, author, now),
+    )
+    conn.commit()
+    conn.close()
+    return material_id
+
+
+def get_material(material_id: str) -> Optional[Dict[str, Any]]:
+    """Get a material by ID."""
+    conn = _get_db()
+    row = conn.execute("SELECT * FROM materials WHERE id = ?", (material_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_all_materials() -> List[Dict[str, Any]]:
+    """Get all materials ordered by creation date."""
+    conn = _get_db()
+    rows = conn.execute("SELECT * FROM materials ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_material(material_id: str) -> bool:
+    """Delete a material and its linked priors."""
+    conn = _get_db()
+    # Delete linked priors
+    conn.execute("DELETE FROM priors WHERE material_id = ?", (material_id,))
+    cursor = conn.execute("DELETE FROM materials WHERE id = ?", (material_id,))
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted
+
+
+def save_prior(prior: Dict[str, Any], source_title: str = "", material_id: str = "") -> str:
     """Save a single prior as .md file and index in SQLite."""
     prior_id = str(uuid.uuid4())[:8]
     now = datetime.now()
@@ -79,8 +143,8 @@ created: {now.isoformat()}
     # Index in SQLite
     conn = _get_db()
     conn.execute(
-        """INSERT INTO priors (id, name, principle, practice, trigger_context, source, source_title, file_path, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO priors (id, name, principle, practice, trigger_context, source, source_title, material_id, file_path, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             prior_id,
             prior["name"],
@@ -89,6 +153,7 @@ created: {now.isoformat()}
             prior.get("trigger", ""),
             prior.get("source", ""),
             source_title,
+            material_id,
             str(filepath),
             now.isoformat(),
         ),
@@ -103,9 +168,9 @@ created: {now.isoformat()}
     return prior_id
 
 
-def save_priors(priors: List[Dict[str, Any]], source_title: str = "") -> List[str]:
+def save_priors(priors: List[Dict[str, Any]], source_title: str = "", material_id: str = "") -> List[str]:
     """Save multiple priors. Returns list of IDs."""
-    return [save_prior(p, source_title) for p in priors]
+    return [save_prior(p, source_title, material_id) for p in priors]
 
 
 def get_all_priors(status: str = "active") -> List[Dict[str, Any]]:
