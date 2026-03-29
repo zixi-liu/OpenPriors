@@ -4,6 +4,8 @@
 OpenPriors — Turn what you learn into what you do.
 An open-source AI assistant that helps people integrate new knowledge into daily practice.
 
+**Target audience:** Intellectuals — avid readers, lifelong learners, knowledge workers who consume books, podcasts, articles, and courses but struggle to retain and apply what they learn. The aesthetic should feel refined, understated, and literary — not corporate or gamified.
+
 ## Git Conventions
 
 ### Commit Messages
