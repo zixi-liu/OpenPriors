@@ -40,13 +40,19 @@ export default function Sidebar({
   const [width, setWidth] = useState(240)
   const [isDragging, setIsDragging] = useState(false)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const sidebarRef = useRef<HTMLElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
+
+  const openMenu = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    if (menuOpen === id) { setMenuOpen(null); return }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setMenuPos({ top: rect.top, left: rect.right + 8 })
+    setMenuOpen(id)
+  }
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(null)
-    }
+    const handler = () => setMenuOpen(null)
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
@@ -148,28 +154,14 @@ export default function Sidebar({
                   <span className="flex-1 text-sm truncate" style={{ opacity: 0.7 }}>
                     {material.title}
                   </span>
-                  <div className="relative flex-shrink-0">
+                  <div className="flex-shrink-0">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === material.id ? null : material.id) }}
+                      onMouseDown={(e) => openMenu(e, material.id)}
                       className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-[#00000010]"
                       style={{ color: 'var(--op-font-color)', opacity: 0.4 }}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                     </button>
-                    {menuOpen === material.id && (
-                      <div ref={menuRef} className="fixed w-36 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1" style={{ zIndex: 9999, left: (sidebarRef.current?.getBoundingClientRect().right || 0) + 4, top: menuRef.current?.getBoundingClientRect().top || 0 }}>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(material.title); setMenuOpen(null) }}
-                          className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#F7F7F5]" style={{ color: 'var(--op-font-color)' }}
-                        >Share</button>
-                        {onDeleteMaterial && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onDeleteMaterial(material.id); setMenuOpen(null) }}
-                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#F7F7F5] text-red-500"
-                          >Move to trash</button>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
@@ -216,26 +208,12 @@ export default function Sidebar({
                 <div className="text-[10px] mt-0.5" style={{ opacity: 0.4 }}>{session.date}</div>
                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
                   <button
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === session.id ? null : session.id) }}
+                    onMouseDown={(e) => openMenu(e, session.id)}
                     className="p-1 opacity-0 group-hover/session:opacity-100 transition-opacity rounded hover:bg-[#00000010]"
                     style={{ color: 'var(--op-font-color)', opacity: 0.4 }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                   </button>
-                  {menuOpen === session.id && (
-                    <div ref={menuRef} className="fixed w-36 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1" style={{ zIndex: 9999, left: (sidebarRef.current?.getBoundingClientRect().right || 0) + 4 }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(session.title); setMenuOpen(null) }}
-                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#F7F7F5]" style={{ color: 'var(--op-font-color)' }}
-                      >Share</button>
-                      {onDeleteSession && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); setMenuOpen(null) }}
-                          className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#F7F7F5] text-red-500"
-                        >Move to trash</button>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             )
@@ -270,6 +248,30 @@ export default function Sidebar({
           onMouseDown={handleMouseDown}
           className="absolute top-0 right-0 w-1 h-full cursor-col-resize"
         />
+      )}
+
+      {/* Shared context menu */}
+      {menuOpen && (
+        <div
+          className="fixed w-36 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1"
+          style={{ zIndex: 9999, top: menuPos.top, left: menuPos.left }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => { navigator.clipboard.writeText(menuOpen); setMenuOpen(null) }}
+            className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#F7F7F5]"
+            style={{ color: 'var(--op-font-color)' }}
+          >Share</button>
+          <button
+            onClick={() => {
+              const isMaterial = materials.some(m => m.id === menuOpen)
+              if (isMaterial) onDeleteMaterial?.(menuOpen)
+              else onDeleteSession?.(menuOpen)
+              setMenuOpen(null)
+            }}
+            className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#F7F7F5] text-red-500"
+          >Move to trash</button>
+        </div>
       )}
     </aside>
   )
