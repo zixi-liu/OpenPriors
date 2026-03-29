@@ -147,18 +147,46 @@ export default function ChatProvider({ children, existingSessionId, onSessionRea
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const createNewSession = async () => {
+    const createRes = await fetch('/api/osmosis/sessions', { method: 'POST' })
+    const createData = await createRes.json()
+    if (!createData.success) return
+    const sid = createData.session_id
+    setSessionId(sid)
+    sessionStorage.setItem('openpriors-session-id', sid)
+    onSessionReady?.(sid)
+
+    const chatRes = await fetch('/api/osmosis/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sid,
+        message: '[SYSTEM] User just opened a new session. Greet them briefly, mention their most recently added learning material if any, and ask what they are interested in working on today.',
+      }),
+    })
+    const chatData = await chatRes.json()
+    if (chatData.success) {
+      setMessages([{ role: 'assistant', content: chatData.message, options: chatData.options }])
+    }
+  }
+
   // Load existing session or create new one
   useEffect(() => {
     const init = async () => {
       setLoading(true)
+
+      // Check for session to load: explicit prop > sessionStorage > create new
+      const loadId = existingSessionId || sessionStorage.getItem('openpriors-session-id')
+
       try {
-        if (existingSessionId) {
+        if (loadId) {
           // Load existing session messages + priors
-          const res = await fetch(`/api/osmosis/sessions/${existingSessionId}`)
+          const res = await fetch(`/api/osmosis/sessions/${loadId}`)
           const data = await res.json()
           if (data.success && data.messages) {
-            setSessionId(existingSessionId)
-            onSessionReady?.(existingSessionId)
+            setSessionId(loadId)
+            sessionStorage.setItem('openpriors-session-id', loadId)
+            onSessionReady?.(loadId)
             if (data.session?.title) setSessionTitle(data.session.title)
             setMessages(data.messages.map((m: any) => ({
               role: m.role,
@@ -166,29 +194,13 @@ export default function ChatProvider({ children, existingSessionId, onSessionRea
               options: m.options || undefined,
             })))
             if (data.priors) setSessionPriors(data.priors)
+          } else {
+            // Session not found — fall through to create new
+            sessionStorage.removeItem('openpriors-session-id')
+            await createNewSession()
           }
         } else {
-          // Create new session
-          const createRes = await fetch('/api/osmosis/sessions', { method: 'POST' })
-          const createData = await createRes.json()
-          if (!createData.success) return
-          const sid = createData.session_id
-          setSessionId(sid)
-          onSessionReady?.(sid)
-
-          // Get greeting
-          const chatRes = await fetch('/api/osmosis/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              session_id: sid,
-              message: '[SYSTEM] User just opened a new session. Greet them briefly, mention their most recently added learning material if any, and ask what they are interested in working on today.',
-            }),
-          })
-          const chatData = await chatRes.json()
-          if (chatData.success) {
-            setMessages([{ role: 'assistant', content: chatData.message, options: chatData.options }])
-          }
+          await createNewSession()
         }
       } catch {
         setMessages([{ role: 'assistant', content: "Hey! What would you like to work on today?" }])

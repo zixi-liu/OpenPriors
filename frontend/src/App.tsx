@@ -119,7 +119,7 @@ export default function App() {
           onToggleMaterial={toggleMaterial}
           onDeleteMaterial={deleteMaterial}
           onViewMaterial={(id) => setViewingMaterialId(id)}
-          onNewPage={() => { setActiveSessionId(null); setPageKey(k => k + 1) }}
+          onNewPage={() => { setActiveSessionId(null); sessionStorage.removeItem('openpriors-session-id'); setPageKey(k => k + 1) }}
           onSelectSession={(id) => { setActiveSessionId(id); setPageKey(k => k + 1) }}
           onDeleteSession={async (id) => {
             try {
