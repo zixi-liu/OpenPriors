@@ -73,7 +73,7 @@ export default function CapturePage() {
     setResult(null)
     try {
       const text = await file.text()
-      const res = await fetch('/api/priors/capture/text', {
+      const res = await fetch('/api/assets/upload/text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: text, source: file.name }),
@@ -92,7 +92,7 @@ export default function CapturePage() {
     setError('')
     setResult(null)
     try {
-      const res = await fetch('/api/priors/capture/url', {
+      const res = await fetch('/api/assets/upload/url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: linkUrl }),
@@ -113,7 +113,7 @@ export default function CapturePage() {
     setStoryLoadingQ(true)
     setStoryModalOpen(true)
     try {
-      const res = await fetch('/api/voice/socratic/next-question', {
+      const res = await fetch('/api/assets/voice/next-question', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversation: [] }),
@@ -130,7 +130,7 @@ export default function CapturePage() {
   const fetchNextQuestion = async (updatedQA: { question: string; answer: string }[]) => {
     setStoryLoadingQ(true)
     try {
-      const res = await fetch('/api/voice/socratic/next-question', {
+      const res = await fetch('/api/assets/voice/next-question', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversation: updatedQA }),
@@ -198,12 +198,11 @@ export default function CapturePage() {
     setStoryGenerating(true)
     setError('')
     setResult(null)
-    const combined = storyQA.map(qa => `Q: ${qa.question}\nA: ${qa.answer}`).join('\n\n')
     try {
-      const res = await fetch('/api/priors/capture/text', {
+      const res = await fetch('/api/assets/voice/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: combined, source: 'voice reflection' }),
+        body: JSON.stringify({ conversation: storyQA }),
       })
       const data = await res.json()
       if (data.success) setResult({ title: data.title, summary: data.summary, priors: data.priors })

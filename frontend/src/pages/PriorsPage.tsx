@@ -26,7 +26,7 @@ export default function PriorsPage() {
 
   const fetchPriors = async () => {
     try {
-      const res = await fetch('/api/priors')
+      const res = await fetch('/api/assets')
       const data = await res.json()
       if (data.success) setPriors(data.priors)
     } catch {
@@ -43,7 +43,7 @@ export default function PriorsPage() {
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/priors/search', {
+      const res = await fetch('/api/assets/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: search }),

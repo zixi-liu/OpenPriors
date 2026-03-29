@@ -4,25 +4,19 @@ import { useTheme, DEFAULT_THEME } from '../context/ThemeContext.tsx'
 
 const FONT_OPTIONS = [
   'Inter',
-  'Georgia',
-  'Merriweather',
-  'Lora',
-  'Roboto',
-  'Source Sans 3',
-  'Fira Sans',
-  'IBM Plex Sans',
-  'system-ui',
-  'monospace',
+  'Baskervville',
+  'Libre Caslon Text',
+  'Sabon',
+  'EB Garamond',
+  'Seraphine',
+  'Copernicus',
+  'Noto Sans',
 ]
 
-const PRESET_BG_COLORS = [
-  '#FDFBF7', '#FFFFFF', '#F0F0F0', '#1a1a2e', '#0d1117',
-  '#FFF8E7', '#F0FFF4', '#EFF6FF', '#FDF2F8', '#FFFBEB',
-]
-
-const PRESET_FONT_COLORS = [
-  '#1a1a1a', '#333333', '#4a4a4a', '#e0e0e0', '#c9d1d9',
-  '#2d3748', '#1e3a5f', '#3c1361', '#134e4a', '#7c2d12',
+const THEMES = [
+  { name: 'Light', bgColor: '#FDFBF7', fontColor: '#1a1a1a' },
+  { name: 'Bright', bgColor: '#FFFFFF', fontColor: '#1a1a1a' },
+  { name: 'Dark', bgColor: '#1a1a2e', fontColor: '#e0e0e0' },
 ]
 
 export default function SettingsPage() {
@@ -40,6 +34,8 @@ export default function SettingsPage() {
     setTheme(DEFAULT_THEME)
   }
 
+  const activeThemeName = THEMES.find(t => t.bgColor === local.bgColor)?.name
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-8">
@@ -48,7 +44,7 @@ export default function SettingsPage() {
             Appearance
           </h2>
           <p className="text-sm mt-1" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>
-            Customize background, font, and colors
+            Choose your theme and font
           </p>
         </div>
         <button
@@ -61,70 +57,27 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* Preview */}
-      <div
-        className="rounded-xl border border-[#E8DFD0] p-6 mb-8"
-        style={{
-          backgroundColor: local.bgColor,
-          color: local.fontColor,
-          fontFamily: `'${local.fontFamily}', sans-serif`,
-        }}
-      >
-        <p className="text-xs uppercase tracking-wide mb-2" style={{ opacity: 0.4 }}>Preview</p>
-        <h3 className="font-semibold text-lg mb-1">The Two-Minute Rule</h3>
-        <p className="text-sm" style={{ opacity: 0.7 }}>
-          If a task takes less than two minutes, do it immediately instead of scheduling it.
-        </p>
-      </div>
-
       <div className="space-y-8">
-        {/* Background Color */}
+        {/* Theme */}
         <div>
           <label className="text-xs font-medium uppercase tracking-wide mb-3 block" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>
-            Background Color
+            Theme
           </label>
-          <div className="flex items-center gap-3 flex-wrap">
-            {PRESET_BG_COLORS.map(c => (
+          <div className="flex gap-3">
+            {THEMES.map(t => (
               <button
-                key={c}
-                onClick={() => update({ bgColor: c })}
-                className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
-                  local.bgColor === c ? 'border-gray-900 scale-110' : 'border-[#E8DFD0]'
+                key={t.name}
+                onClick={() => update({ bgColor: t.bgColor, fontColor: t.fontColor })}
+                className={`flex-1 rounded-xl border-2 p-4 text-center transition-all ${
+                  activeThemeName === t.name
+                    ? 'border-gray-900 shadow-sm'
+                    : 'border-[#E8DFD0] hover:border-gray-400'
                 }`}
-                style={{ backgroundColor: c }}
-              />
+                style={{ backgroundColor: t.bgColor, color: t.fontColor }}
+              >
+                <div className="text-sm font-medium">{t.name}</div>
+              </button>
             ))}
-            <input
-              type="color"
-              value={local.bgColor}
-              onChange={e => update({ bgColor: e.target.value })}
-              className="w-8 h-8 rounded-full cursor-pointer border-0 p-0"
-            />
-          </div>
-        </div>
-
-        {/* Font Color */}
-        <div>
-          <label className="text-xs font-medium uppercase tracking-wide mb-3 block" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>
-            Font Color
-          </label>
-          <div className="flex items-center gap-3 flex-wrap">
-            {PRESET_FONT_COLORS.map(c => (
-              <button
-                key={c}
-                onClick={() => update({ fontColor: c })}
-                className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
-                  local.fontColor === c ? 'border-gray-900 scale-110' : 'border-[#E8DFD0]'
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-            <input
-              type="color"
-              value={local.fontColor}
-              onChange={e => update({ fontColor: e.target.value })}
-              className="w-8 h-8 rounded-full cursor-pointer border-0 p-0"
-            />
           </div>
         </div>
 

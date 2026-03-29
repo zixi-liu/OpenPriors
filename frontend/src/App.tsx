@@ -19,7 +19,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/priors')
+    fetch('/api/assets')
       .then(r => r.json())
       .then(data => {
         if (data.success && data.priors) {
