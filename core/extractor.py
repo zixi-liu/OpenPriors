@@ -20,62 +20,34 @@ from core.config import get_api_key
 
 EXTRACT_PROMPT = """You are an expert at turning knowledge into actionable practice.
 
-The user has shared something they learned. Extract actionable "priors" — principles
-they can integrate into their daily life through practice.
+The user has shared something they learned. First, identify what type of source this is (book, movie/TV, article, podcast, personal notes, etc.), then adapt your extraction accordingly.
 
 SOURCE:
 ---
 {content}
 ---
+
+Adapt your extraction to the source type:
+- Books → include notable quotes from the text or reviews, key themes
+- Movies/TV → include character lessons, thematic insights, memorable dialogue
+- Articles/blogs → include key arguments, surprising findings, data points
+- Podcasts/talks → include speaker insights, frameworks discussed, key exchanges
+- Personal notes → focus on the user's own reflections and intentions
 
 For each prior, provide:
 - name: Short name (2-5 words)
 - principle: The core insight in one sentence
 - practice: A concrete way to practice this (specific, doable in under 5 minutes)
 - trigger: When/where in daily life this applies (e.g., "before a meeting", "when writing an email")
-- source: Where this came from (book title, article, etc.)
+- source: Where this came from (book title, movie name, article, etc.)
+- quote: A relevant quote, line of dialogue, or passage that captures this idea (leave empty if none available)
 
 Return JSON:
 {{
-  "title": "source title or topic",
+  "title": "source title",
+  "source_type": "book | movie | article | podcast | notes | other",
   "summary": "2-3 sentence summary of the source material",
-  "priors": [
-    {{
-      "name": "...",
-      "principle": "...",
-      "practice": "...",
-      "trigger": "...",
-      "source": "..."
-    }}
-  ]
-}}
-
-Extract 3-7 priors. Focus on the most actionable, life-changing insights.
-Return ONLY valid JSON."""
-
-
-BOOK_EXTRACT_PROMPT = """You are an expert at extracting wisdom from books.
-
-The user shared a book page (likely from Goodreads or similar). Extract the most valuable insights, including quotes, reviewer observations, and the author's core ideas.
-
-SOURCE:
----
-{content}
----
-
-For each prior, provide:
-- name: Short name (2-5 words)
-- principle: The core insight in one sentence
-- practice: A concrete way to practice this (specific, doable in under 5 minutes)
-- trigger: When/where in daily life this applies
-- source: Book title and author
-- quote: A memorable quote from the book or reviews that captures this idea (if available, otherwise leave empty)
-
-Return JSON:
-{{
-  "title": "Book Title by Author",
-  "summary": "2-3 sentence summary of the book's core message",
-  "notable_quotes": ["list of standout quotes from the book or reviews"],
+  "notable_quotes": ["standout quotes, dialogue, or passages — include all you can find"],
   "priors": [
     {{
       "name": "...",
@@ -88,23 +60,13 @@ Return JSON:
   ]
 }}
 
-Extract 3-7 priors. Prioritize insights backed by specific quotes or reviewer highlights.
+Extract as many priors as the content supports. Focus on actionable, life-changing insights.
 Return ONLY valid JSON."""
-
-
-def _is_book_source(content: str, source_hint: str = "") -> bool:
-    """Detect if the content is from a book source."""
-    book_signals = ["goodreads.com", "goodreads", "ratings", "reviews", "Want to Read"]
-    combined = (content[:2000] + " " + source_hint).lower()
-    return any(signal.lower() in combined for signal in book_signals)
 
 
 async def extract_priors(content: str, source_hint: str = "") -> Dict[str, Any]:
     """Extract actionable priors from raw content."""
-    if _is_book_source(content, source_hint):
-        prompt = BOOK_EXTRACT_PROMPT.format(content=content[:15000])
-    else:
-        prompt = EXTRACT_PROMPT.format(content=content[:15000])
+    prompt = EXTRACT_PROMPT.format(content=content[:25000])
     if source_hint:
         prompt += f"\n\nSource hint: {source_hint}"
 
@@ -221,20 +183,114 @@ def _fetch_html_content(url: str) -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
-# Main URL extraction
+# Enrichment: fetch additional content for books/movies
+# ---------------------------------------------------------------------------
+
+def _extract_goodreads_quotes_url(url: str) -> Optional[str]:
+    """Extract the quotes page URL from a Goodreads book URL."""
+    # goodreads.com/book/show/12345-title -> goodreads.com/work/quotes/12345-title
+    match = re.search(r'goodreads\.com/(?:en/)?book/show/(\d+[^/?]*)', url)
+    if match:
+        book_slug = match.group(1)
+        return f"https://www.goodreads.com/work/quotes/{book_slug}"
+    return None
+
+
+def _fetch_goodreads_quotes(url: str) -> str:
+    """Fetch quotes from the Goodreads quotes page for a book."""
+    quotes_url = _extract_goodreads_quotes_url(url)
+    if not quotes_url:
+        return ""
+    content = _fetch_html_content(quotes_url)
+    return content or ""
+
+
+async def _search_quotes(url: str, source_type: str = "book") -> str:
+    """Use Gemini search to find quotes and insights about a book/movie from its URL."""
+    try:
+        from google import genai
+        from google.genai.types import Tool, GoogleSearch
+
+        key = get_api_key("gemini")
+        if not key:
+            return ""
+
+        client = genai.Client(api_key=key)
+
+        if source_type == "movie":
+            query = f"Find the best quotes, memorable dialogue, and key themes from this movie/show: {url}. Include character insights and life lessons."
+        else:
+            query = f"Find the best quotes and key insights from this book: {url}. Include notable passages, reader highlights, and core ideas."
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=query,
+            config={
+                "tools": [Tool(google_search=GoogleSearch())],
+                "temperature": 0.2,
+            },
+        )
+        return response.text or ""
+    except Exception:
+        return ""
+
+
+ENRICHABLE_SITES = {
+    "goodreads": "book",
+    "letterboxd": "movie",
+    "imdb": "movie",
+    "rottentomatoes": "movie",
+}
+
+
+def _get_enrichable_type(url: str) -> Optional[str]:
+    """Return 'book' or 'movie' if this is a known site we should enrich, else None."""
+    url_lower = url.lower()
+    for site, source_type in ENRICHABLE_SITES.items():
+        if site in url_lower:
+            return source_type
+    return None
+
+
+async def _enrich_content(url: str, base_content: str) -> str:
+    """Enrich content with additional quotes for known book/movie sites."""
+    source_type = _get_enrichable_type(url)
+    if not source_type:
+        return base_content
+
+    # Base content first (authoritative source)
+    parts = [base_content]
+
+    # Goodreads: also fetch the quotes page
+    if "goodreads" in url.lower():
+        quotes_content = _fetch_goodreads_quotes(url)
+        if quotes_content:
+            parts.append(f"\n\n--- QUOTES PAGE ---\n{quotes_content}")
+
+    # Web search for additional quotes (supplementary — may not be perfectly on-topic)
+    search_results = await _search_quotes(url, source_type)
+    if search_results:
+        parts.append(f"\n\n--- ADDITIONAL WEB RESULTS (use only if relevant to the main source above) ---\n{search_results}")
+
+    return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Main URL extraction (multi-step pipeline)
 # ---------------------------------------------------------------------------
 
 async def extract_from_url(url: str) -> Dict[str, Any]:
     """
-    Extract content from a URL. Strategy:
-      1. YouTube → transcript API + oembed metadata
-      2. Other URLs → HTML fetch
-      3. Fallback → Gemini search grounding
+    Multi-step extraction pipeline:
+      1. Fetch — get raw content (YouTube transcript, HTML, or Gemini search)
+      2. Identify — detect title and source type
+      3. Enrich — for books/movies, fetch additional quotes and insights
+      4. Return combined content for prior extraction
     """
     video_id = _extract_youtube_id(url)
 
+    # --- Step 1: Fetch ---
     if video_id:
-        # YouTube: get real transcript + metadata
         metadata = _fetch_youtube_metadata(video_id)
         transcript = _fetch_youtube_transcript(video_id)
 
@@ -246,7 +302,6 @@ async def extract_from_url(url: str) -> Dict[str, Any]:
                 "content": transcript,
             }
 
-        # No transcript available — try Gemini search with metadata hint
         hint = f"{metadata['title']} by {metadata['author']}" if metadata["title"] else ""
         search_content = await _fetch_via_gemini_search(url, hint)
         if search_content:
@@ -259,22 +314,19 @@ async def extract_from_url(url: str) -> Dict[str, Any]:
 
         return {"accessible": False, "title": metadata.get("title", ""), "content": ""}
 
-    # Non-YouTube: try HTML fetch first
+    # Non-YouTube: fetch HTML
     html_content = _fetch_html_content(url)
-    if html_content:
-        return {
-            "accessible": True,
-            "title": "",
-            "content": html_content,
-        }
+    if not html_content:
+        html_content = await _fetch_via_gemini_search(url) or ""
 
-    # Fallback: Gemini search grounding
-    search_content = await _fetch_via_gemini_search(url)
-    if search_content:
-        return {
-            "accessible": True,
-            "title": "",
-            "content": search_content,
-        }
+    if not html_content:
+        return {"accessible": False, "title": "", "content": ""}
 
-    return {"accessible": False, "title": "", "content": ""}
+    # --- Step 2: Enrich (only for known book/movie sites) ---
+    enriched_content = await _enrich_content(url, html_content)
+
+    return {
+        "accessible": True,
+        "title": "",
+        "content": enriched_content,
+    }

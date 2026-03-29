@@ -69,10 +69,26 @@ async def upload_url(request: UploadURLRequest):
 
         result = await extract_priors(content, source_hint=request.url)
         title = extracted.get("title", "") or result.get("title", "")
+        is_youtube = "youtu" in request.url
+
+        detected_type = result.get("source_type", "other")
+
+        if is_youtube:
+            # YouTube: store the real transcript
+            stored_content = content
+        elif detected_type in ("book", "movie"):
+            # Books/movies: store summary + quotes
+            notable_quotes = result.get("notable_quotes", [])
+            quotes_section = "\n".join(f'"{q}"' for q in notable_quotes) if notable_quotes else ""
+            stored_content = f"{result.get('summary', '')}\n\n{quotes_section}".strip()
+        else:
+            # Articles, blogs, other: store raw content
+            stored_content = content
+
         material_id = save_material(
             title=title,
-            content=content,
-            source_type="youtube" if "youtu" in request.url else "url",
+            content=stored_content,
+            source_type="youtube" if is_youtube else "url",
             url=request.url,
             summary=result.get("summary", ""),
             author=extracted.get("author", ""),

@@ -80,7 +80,7 @@ async def complete_json(
     system_message: str = "",
     model: Optional[str] = None,
 ) -> Dict[str, Any]:
-    response = await complete(prompt, system_message, model, temperature=0.3)
+    response = await complete(prompt, system_message, model, temperature=0.3, max_tokens=16000)
     return parse_json(response.content)
 
 
@@ -90,13 +90,12 @@ def parse_json(text: str) -> Dict[str, Any]:
     except json.JSONDecodeError:
         pass
 
-    # Strip markdown code blocks
-    code_block = re.search(r'```(?:json)?\s*([\s\S]*?)```', text)
-    if code_block:
+    # Strip markdown code blocks — try all matches, not just first
+    for code_block in re.finditer(r'```(?:json)?\s*([\s\S]*?)```', text):
         try:
             return json.loads(code_block.group(1).strip())
         except json.JSONDecodeError:
-            pass
+            continue
 
     # Find outermost JSON object
     start = text.find('{')
