@@ -40,40 +40,37 @@ async def next_question(req: NextQuestionRequest):
         conversation_so_far += f"Q: {qa.question}\nA: {qa.answer}\n\n"
 
     if round_num == 0:
-        round_guidance = """This is the FIRST question. Ask something warm and open-ended about what they learned recently.
-Examples: "What changed how you think recently?", "What's an idea you encountered lately that you can't stop thinking about?"
-Do NOT ask follow-ups yet. Just get them talking."""
+        round_guidance = """Ask what they learned recently. Be specific about learning.
+Good: "What's something you read, watched, or heard recently that changed how you think?"
+Bad: "Hey what's on your mind?" (too vague)"""
     elif round_num == 1:
-        round_guidance = """This is round 2. Based on what they shared, ask where this principle shows up (or is missing) in their actual life.
-Examples: "Where in your life does this already show up? Where is it missing?", "What would change if you lived by this for a week?" """
+        round_guidance = """Based on what they shared, ask where this principle shows up or is missing in their actual life.
+Good: "Where in your daily life does this already show up? Where is it missing?"
+Bad: "That sounds intriguing, tell me more" (too vague)"""
     else:
-        round_guidance = """This is the last round. Help them commit to one specific, small action.
-Examples: "What's one thing you'll do differently this week because of this?", "If you could change just one small habit starting tomorrow, what would it be?" """
+        round_guidance = """Help them commit to one specific, small action.
+Good: "What's one thing you'll do differently this week because of this?"
+Bad: "How do you feel about that?" (too vague)"""
 
-    system_prompt = f"""You are a warm, reflective learning coach helping someone process what they recently learned.
-
-Your job is to have a natural conversation that helps them deeply understand and commit to applying what they learned.
+    system_prompt = f"""You generate exactly ONE short question for a learning reflection session. Output ONLY the question, nothing else. No preamble, no commentary, no "That sounds interesting", no acknowledgment of their answer. Just the question.
 
 {round_guidance}
 
 Previous conversation:
 {conversation_so_far}
 
-Rules:
-- Ask exactly ONE question
-- Keep it short and conversational (1-2 sentences)
-- Match their energy — if they're brief, keep it light; if they're detailed, dig deeper
-- After 3 rounds, respond with EXACTLY: "COMPLETE"
-- Never sound like a formal interview or quiz"""
+After 3 rounds, respond with EXACTLY: "COMPLETE"
+
+Output ONLY the question:"""
 
     response = await complete(
-        prompt="Generate the next question.",
+        prompt="",
         system_message=system_prompt,
         temperature=0.7,
-        max_tokens=150,
+        max_tokens=2000,
     )
 
-    text = response.content.strip()
+    text = response.content.strip().strip('"')
 
     if "COMPLETE" in text or round_num >= 3:
         return JSONResponse({"question": "", "isComplete": True})
