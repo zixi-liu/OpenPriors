@@ -19,7 +19,7 @@ interface SidebarProps {
   onToggleMaterial?: (id: string) => void
   onDeleteMaterial?: (id: string) => void
   onViewMaterial?: (id: string) => void
-  onNewSession?: () => void
+  onNewPage?: () => void
   onDeleteSession?: (id: string) => void
 }
 
@@ -29,7 +29,7 @@ export default function Sidebar({
   onToggleMaterial,
   onDeleteMaterial,
   onViewMaterial,
-  onNewSession,
+  onNewPage,
   onDeleteSession,
 }: SidebarProps) {
   const navigate = useNavigate()
@@ -107,7 +107,7 @@ export default function Sidebar({
       {!isCollapsed && (
         <div className="px-2 pb-2 mt-3">
           <div className="px-1 mb-1">
-            <span className="text-sm font-bold tracking-wider" style={{ opacity: 0.7 }}>My Assets</span>
+            <span className="text-base font-bold tracking-wider" style={{ opacity: 0.7 }}>My Assets</span>
           </div>
           {materials.length === 0 ? (
             <p className="text-xs px-1" style={{ opacity: 0.3 }}>No assets yet</p>
@@ -157,7 +157,7 @@ export default function Sidebar({
       {/* My Osmosis Sessions */}
       {!isCollapsed && (
         <div className="px-3 mt-3 mb-1">
-          <span className="text-sm font-bold tracking-wider" style={{ opacity: 0.7 }}>My Projects</span>
+          <span className="text-base font-bold tracking-wider" style={{ opacity: 0.7 }}>My Projects</span>
         </div>
       )}
 
@@ -165,7 +165,7 @@ export default function Sidebar({
       {!isCollapsed && (
       <div className="px-2 pb-2">
         <button
-          onClick={onNewSession || (() => navigate('/capture'))}
+          onClick={() => { onNewPage?.(); navigate('/capture') }}
           className="flex items-center gap-1.5 rounded text-sm hover:bg-[#00000008] transition-colors w-full px-2 py-1.5"
           style={{ color: 'var(--op-font-color)', opacity: 0.7 }}
         >

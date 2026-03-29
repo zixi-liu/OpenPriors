@@ -118,7 +118,7 @@ export default function App() {
           onToggleMaterial={toggleMaterial}
           onDeleteMaterial={deleteMaterial}
           onViewMaterial={(id) => setViewingMaterialId(id)}
-          onNewSession={() => setPageKey(k => k + 1)}
+          onNewPage={() => setPageKey(k => k + 1)}
         />
         <main className="flex-1 overflow-auto">
           <Routes>
