@@ -47,7 +47,7 @@ export default function Sidebar({
     e.stopPropagation()
     if (menuOpen === id) { setMenuOpen(null); return }
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    setMenuPos({ top: rect.top, left: rect.right + 8 })
+    setMenuPos({ top: rect.top, left: rect.right - 12 })
     setMenuOpen(id)
   }
 
@@ -253,8 +253,8 @@ export default function Sidebar({
       {/* Shared context menu */}
       {menuOpen && (
         <div
-          className="fixed w-36 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1"
-          style={{ zIndex: 9999, top: menuPos.top, left: menuPos.left }}
+          className="fixed w-36 border border-[#E3E2E0] rounded-lg shadow-lg py-1"
+          style={{ zIndex: 9999, top: menuPos.top, left: menuPos.left, background: 'var(--op-bg)' }}
           onMouseDown={(e) => e.stopPropagation()}
         >
           <button
