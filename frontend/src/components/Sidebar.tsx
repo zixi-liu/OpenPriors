@@ -157,8 +157,8 @@ export default function Sidebar({
                   <div className="flex-shrink-0">
                     <button
                       onMouseDown={(e) => openMenu(e, material.id)}
-                      className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-[#00000010]"
-                      style={{ color: 'var(--op-font-color)', opacity: 0.4 }}
+                      className="opacity-0 group-hover/item:opacity-60 p-1 rounded hover:bg-[#00000010] transition-opacity"
+                      style={{ color: 'var(--op-font-color)' }}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                     </button>
@@ -209,8 +209,8 @@ export default function Sidebar({
                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
                   <button
                     onMouseDown={(e) => openMenu(e, session.id)}
-                    className="p-1 opacity-0 group-hover/session:opacity-100 transition-opacity rounded hover:bg-[#00000010]"
-                    style={{ color: 'var(--op-font-color)', opacity: 0.4 }}
+                    className="p-1 opacity-0 group-hover/session:opacity-60 transition-opacity rounded hover:bg-[#00000010]"
+                    style={{ color: 'var(--op-font-color)' }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                   </button>
