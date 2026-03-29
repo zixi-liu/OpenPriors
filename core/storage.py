@@ -54,6 +54,25 @@ def _get_db() -> sqlite3.Connection:
         CREATE VIRTUAL TABLE IF NOT EXISTS priors_fts
         USING fts5(name, principle, practice, source, content=priors, content_rowid=rowid)
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS session_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            options TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (session_id) REFERENCES sessions(id)
+        )
+    """)
     conn.commit()
     return conn
 
@@ -214,3 +233,76 @@ def record_practice(prior_id: str):
     )
     conn.commit()
     conn.close()
+
+
+# ============================================================
+# Sessions
+# ============================================================
+
+def create_session(title: str = "New Session") -> str:
+    session_id = str(uuid.uuid4())[:8]
+    now = datetime.now().isoformat()
+    conn = _get_db()
+    conn.execute(
+        "INSERT INTO sessions (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
+        (session_id, title, now, now),
+    )
+    conn.commit()
+    conn.close()
+    return session_id
+
+
+def get_session(session_id: str) -> Optional[Dict[str, Any]]:
+    conn = _get_db()
+    row = conn.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_all_sessions() -> List[Dict[str, Any]]:
+    conn = _get_db()
+    rows = conn.execute("SELECT * FROM sessions ORDER BY updated_at DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def update_session_title(session_id: str, title: str):
+    conn = _get_db()
+    conn.execute(
+        "UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?",
+        (title, datetime.now().isoformat(), session_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_session(session_id: str) -> bool:
+    conn = _get_db()
+    conn.execute("DELETE FROM session_messages WHERE session_id = ?", (session_id,))
+    cursor = conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted
+
+
+def add_session_message(session_id: str, role: str, content: str, options: Optional[str] = None):
+    now = datetime.now().isoformat()
+    conn = _get_db()
+    conn.execute(
+        "INSERT INTO session_messages (session_id, role, content, options, created_at) VALUES (?, ?, ?, ?, ?)",
+        (session_id, role, content, options, now),
+    )
+    conn.execute("UPDATE sessions SET updated_at = ? WHERE id = ?", (now, session_id))
+    conn.commit()
+    conn.close()
+
+
+def get_session_messages(session_id: str) -> List[Dict[str, Any]]:
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT * FROM session_messages WHERE session_id = ? ORDER BY id ASC",
+        (session_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

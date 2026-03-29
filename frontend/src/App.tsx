@@ -10,7 +10,7 @@ import SettingsPage from './pages/SettingsPage.tsx'
 export default function App() {
   const [configured, setConfigured] = useState<boolean | null>(null)
   const [materials, setMaterials] = useState<{ id: string; title: string; isActive: boolean }[]>([])
-  const [sessions] = useState<{ id: string; title: string; date: string }[]>([])
+  const [sessions, setSessions] = useState<{ id: string; title: string; date: string }[]>([])
   const [viewingMaterialId, setViewingMaterialId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -38,6 +38,25 @@ export default function App() {
   }
 
   useEffect(() => { fetchAssets() }, [])
+
+  const fetchSessions = () => {
+    fetch('/api/osmosis/sessions')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.sessions) {
+          setSessions(
+            data.sessions.map((s: { id: string; title: string; updated_at: string }) => ({
+              id: s.id,
+              title: s.title,
+              date: new Date(s.updated_at).toLocaleDateString(),
+            }))
+          )
+        }
+      })
+      .catch(() => {})
+  }
+
+  useEffect(() => { fetchSessions() }, [])
 
   const toggleMaterial = (id: string) => {
     setMaterials(prev =>

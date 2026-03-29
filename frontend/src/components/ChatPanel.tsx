@@ -13,10 +13,10 @@ interface Option {
 }
 
 export default function ChatPanel() {
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [greeted, setGreeted] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -24,38 +24,44 @@ export default function ChatPanel() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, loading])
 
-  // Auto-greet on mount
+  // Create session and get greeting on mount
   useEffect(() => {
-    if (greeted) return
-    setGreeted(true)
-    setLoading(true)
+    const init = async () => {
+      setLoading(true)
+      try {
+        // Create session
+        const createRes = await fetch('/api/osmosis/sessions', { method: 'POST' })
+        const createData = await createRes.json()
+        if (!createData.success) return
+        const sid = createData.session_id
+        setSessionId(sid)
 
-    fetch('/api/osmosis/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        conversation: [],
-        message: '[SYSTEM] User just opened a new session. Greet them briefly, mention their most recently added learning material if any, and ask what they are interested in working on today.',
-      }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          setMessages([{ role: 'assistant', content: data.message, options: data.options }])
+        // Get greeting
+        const chatRes = await fetch('/api/osmosis/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sid,
+            message: '[SYSTEM] User just opened a new session. Greet them briefly, mention their most recently added learning material if any, and ask what they are interested in working on today.',
+          }),
+        })
+        const chatData = await chatRes.json()
+        if (chatData.success) {
+          setMessages([{ role: 'assistant', content: chatData.message, options: chatData.options }])
         }
-      })
-      .catch(() => {
+      } catch {
         setMessages([{ role: 'assistant', content: "Hey! What would you like to work on today?" }])
-      })
-      .finally(() => {
+      } finally {
         setLoading(false)
         setTimeout(() => inputRef.current?.focus(), 100)
-      })
+      }
+    }
+    init()
   }, [])
 
   const sendMessage = async (text?: string) => {
     const userMsg = (text || input).trim()
-    if (!userMsg || loading) return
+    if (!userMsg || loading || !sessionId) return
     setInput('')
 
     const newMessages: Message[] = [...messages, { role: 'user', content: userMsg }]
@@ -63,11 +69,10 @@ export default function ChatPanel() {
     setLoading(true)
 
     try {
-      const conversation = newMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content }))
       const res = await fetch('/api/osmosis/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation, message: userMsg }),
+        body: JSON.stringify({ session_id: sessionId, message: userMsg }),
       })
       const data = await res.json()
       if (data.success) {
