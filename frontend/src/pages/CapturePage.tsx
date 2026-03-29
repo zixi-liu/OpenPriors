@@ -318,8 +318,8 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
         {result && (
           <div className="animate-fade-in space-y-6 ml-1">
             <div>
-              <h2 className="text-sm font-bold tracking-wider" style={{ color: 'var(--op-font-color)', opacity: 0.7 }}>{result.title}</h2>
-              <p className="text-sm mt-1" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>{result.summary}</p>
+              <h2 className="text-lg font-bold" style={{ color: 'var(--op-font-color)', opacity: 0.8 }}>{result.title}</h2>
+              <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>{result.summary}</p>
             </div>
             <div className="space-y-3">
               {result.priors.map((prior, i) => <PriorCard key={i} prior={prior} />)}
