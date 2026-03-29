@@ -20,7 +20,7 @@ OpenPriors closes the gap between **knowing** and **doing**.
 1. Capture    →  Upload a book, paste a URL, or talk about what you learned
 2. Extract    →  AI distills actionable principles from your material
 3. Synthesize →  AI agents help you connect learnings to your real life
-4. Practice   →  Goals with reminders so you actually do the thing
+4. Practice   →  Goals with due dates, Slack reminders, and check-ins
 ```
 
 ## Features
@@ -43,7 +43,7 @@ OpenPriors closes the gap between **knowing** and **doing**.
 
 ```bash
 # Clone
-git clone https://github.com/anthropics/openpriors.git
+git clone https://github.com/zixi-liu/openpriors.git
 cd openpriors
 
 # Setup — pick your LLM provider and paste your API key
@@ -53,11 +53,11 @@ python setup.py
 cd frontend && npm install && cd ..
 
 # Start
-python app.py                    # Backend on :8000
-cd frontend && npm run dev       # Frontend on :5173
+python app.py
+cd frontend && npm run dev
 ```
 
-Open `http://localhost:5173` and start learning.
+Open the URL shown in your terminal and start learning.
 
 ## Architecture
 
