@@ -107,9 +107,14 @@ async def osmosis_chat(request: ChatRequest):
         add_session_message(request.session_id, "assistant", result.content, options_json)
 
 
+        # Strip internal routing tags from display
+        display_message = result.content
+        if "[ACTIVE_AGENT:" in display_message:
+            display_message = display_message.split("[ACTIVE_AGENT:")[0].strip()
+
         response: Dict[str, Any] = {
             "success": True,
-            "message": result.content,
+            "message": display_message,
             "session_id": request.session_id,
         }
         if result.options:

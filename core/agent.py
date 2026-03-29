@@ -191,14 +191,82 @@ class AgentMessage:
     options: Optional[List[dict]] = None  # populated when propose_options is called
 
 
+AGENT_TYPE_MAP = {
+    "guided_reflection": "reflection",
+    "practice_plan": "planner",
+    "weekly_practice_plan": "planner",
+    "roleplay": "coach",
+    "integration_essay": "writer",
+}
+
+
+def detect_sub_agent(conversation: List[Dict[str, Any]], user_message: str) -> Optional[str]:
+    """Check if we should route to a sub-agent based on conversation history."""
+    # Check current message
+    msg_lower = user_message.lower()
+    if msg_lower.startswith("i'd like to:") or msg_lower.startswith("i'd like to:"):
+        for keyword, agent in AGENT_TYPE_MAP.items():
+            if keyword.replace("_", " ") in msg_lower:
+                return agent
+
+    # Check if a sub-agent is already active (look for marker in conversation)
+    for msg in reversed(conversation):
+        content = msg.get("content", "")
+        if "[ACTIVE_AGENT:" in content:
+            agent_type = content.split("[ACTIVE_AGENT:")[1].split("]")[0]
+            return agent_type
+
+    return None
+
+
+def get_sub_agent_context(conversation: List[Dict[str, Any]]) -> str:
+    """Extract context from the conversation for the sub-agent."""
+    # Gather the last few assistant messages with material references
+    context_parts = []
+    for msg in conversation:
+        if msg.get("role") == "assistant" and msg.get("content"):
+            context_parts.append(msg["content"])
+    return "\n".join(context_parts[-3:]) if context_parts else ""
+
+
 async def run_agent_turn(
     conversation: List[Dict[str, Any]],
     user_message: str,
 ) -> AgentMessage:
     """
-    Run one turn of the agent. May involve multiple tool calls before responding.
+    Run one turn of the agent. Routes to sub-agents if appropriate.
     Returns the agent's final response (text or options).
     """
+    # Check if we should route to a sub-agent
+    sub_agent = detect_sub_agent(conversation, user_message)
+    if sub_agent:
+        context = get_sub_agent_context(conversation)
+        # Filter conversation to only user/assistant messages (no tool calls)
+        clean_convo = [m for m in conversation if m.get("role") in ("user", "assistant") and not m.get("tool_calls")]
+
+        if sub_agent == "reflection":
+            from core.agents.reflection import run_reflection_turn
+            result = await run_reflection_turn(clean_convo, user_message, context)
+        elif sub_agent == "planner":
+            from core.agents.planner import run_planner_turn
+            result = await run_planner_turn(clean_convo, user_message, context)
+        elif sub_agent == "coach":
+            from core.agents.coach import run_coach_turn
+            result = await run_coach_turn(clean_convo, user_message, context)
+        elif sub_agent == "writer":
+            from core.agents.writer import run_writer_turn
+            result = await run_writer_turn(clean_convo, user_message, context)
+        else:
+            result = None
+
+        if result:
+            content = result.content
+            if not result.done:
+                # Mark the active agent so we keep routing to it
+                content += f"\n\n[ACTIVE_AGENT:{sub_agent}]"
+            return AgentMessage(role="assistant", content=content)
+
+    # Default: run the explore/router agent
     from openai import AsyncOpenAI
     import os
 
