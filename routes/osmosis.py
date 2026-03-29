@@ -89,8 +89,9 @@ async def osmosis_chat(request: ChatRequest):
         if not session:
             return JSONResponse({"success": False, "error": "Session not found"}, status_code=404)
 
-        # Save user message
-        add_session_message(request.session_id, "user", request.message)
+        # Save user message (skip internal system prompts)
+        if not request.message.startswith("[SYSTEM]"):
+            add_session_message(request.session_id, "user", request.message)
 
         # Load conversation history from DB
         db_messages = get_session_messages(request.session_id)
@@ -103,9 +104,8 @@ async def osmosis_chat(request: ChatRequest):
         options_json = json.dumps(result.options) if result.options else None
         add_session_message(request.session_id, "assistant", result.content, options_json)
 
-        # Auto-title: if this is the first real exchange (2 messages: greeting + user), generate title
-        if len(db_messages) <= 2 and session["title"] == "New Session":
-            # Use first few words of user message as title
+        # Auto-title: use first real user message (skip [SYSTEM] messages)
+        if session["title"] == "New Session" and not request.message.startswith("[SYSTEM]"):
             title = request.message[:50].strip()
             if len(request.message) > 50:
                 title += "..."

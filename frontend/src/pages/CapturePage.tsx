@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PriorCard from '../components/PriorCard.tsx'
-import ChatPanel from '../components/ChatPanel.tsx'
+import ChatProvider, { ChatMessages, ChatInput } from '../components/ChatPanel.tsx'
 
 interface Prior {
   name: string
@@ -226,6 +226,7 @@ export default function CapturePage() {
   }
 
   return (
+    <ChatProvider>
     <div className="h-full flex flex-col">
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
@@ -339,9 +340,12 @@ export default function CapturePage() {
         )}
 
       </div>
-      {/* Chat — messages in scroll area */}
-      <ChatPanel />
+      {/* Chat messages in scroll area */}
+      <ChatMessages />
       </div>
+
+      {/* Chat input — fixed at bottom */}
+      <ChatInput />
 
       {/* Link Modal */}
       {linkModalOpen && (
@@ -462,5 +466,6 @@ export default function CapturePage() {
       )}
 
     </div>
+    </ChatProvider>
   )
 }
