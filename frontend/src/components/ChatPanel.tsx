@@ -120,7 +120,9 @@ export function ChatInput() {
 import { createContext, useContext } from 'react'
 
 interface ChatContextType {
+  sessionId: string | null
   messages: Message[]
+  sessionPriors: any[]
   input: string
   setInput: (v: string) => void
   loading: boolean
@@ -130,15 +132,16 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | null>(null)
 
-function useChatContext() {
+export function useChatContext() {
   const ctx = useContext(ChatContext)
   if (!ctx) throw new Error('useChatContext must be used within ChatProvider')
   return ctx
 }
 
-export default function ChatProvider({ children, existingSessionId }: { children: React.ReactNode; existingSessionId?: string }) {
+export default function ChatProvider({ children, existingSessionId, onSessionReady }: { children: React.ReactNode; existingSessionId?: string; onSessionReady?: (id: string) => void }) {
   const [sessionId, setSessionId] = useState<string | null>(existingSessionId || null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [sessionPriors, setSessionPriors] = useState<any[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -148,16 +151,18 @@ export default function ChatProvider({ children, existingSessionId }: { children
       setLoading(true)
       try {
         if (existingSessionId) {
-          // Load existing session messages
+          // Load existing session messages + priors
           const res = await fetch(`/api/osmosis/sessions/${existingSessionId}`)
           const data = await res.json()
           if (data.success && data.messages) {
             setSessionId(existingSessionId)
+            onSessionReady?.(existingSessionId)
             setMessages(data.messages.map((m: any) => ({
               role: m.role,
               content: m.content,
               options: m.options || undefined,
             })))
+            if (data.priors) setSessionPriors(data.priors)
           }
         } else {
           // Create new session
@@ -166,6 +171,7 @@ export default function ChatProvider({ children, existingSessionId }: { children
           if (!createData.success) return
           const sid = createData.session_id
           setSessionId(sid)
+          onSessionReady?.(sid)
 
           // Get greeting
           const chatRes = await fetch('/api/osmosis/chat', {
@@ -221,7 +227,7 @@ export default function ChatProvider({ children, existingSessionId }: { children
   }
 
   return (
-    <ChatContext.Provider value={{ messages, input, setInput, loading, sendMessage, selectOption }}>
+    <ChatContext.Provider value={{ sessionId, messages, sessionPriors, input, setInput, loading, sendMessage, selectOption }}>
       {children}
     </ChatContext.Provider>
   )

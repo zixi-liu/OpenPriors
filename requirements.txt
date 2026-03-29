@@ -7,3 +7,5 @@ python-multipart>=0.0.6
 youtube-transcript-api>=1.0.0
 google-genai>=1.0.0
 openai>=1.0.0
+slack-bolt>=1.18.0
+slack-sdk>=3.27.0

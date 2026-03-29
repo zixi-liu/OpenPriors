@@ -16,6 +16,7 @@ from core.agent import run_agent_turn
 from core.storage import (
     create_session, get_session, get_all_sessions, update_session_title,
     delete_session, add_session_message, get_session_messages,
+    get_priors_by_session,
 )
 
 router = APIRouter(prefix="/api/osmosis", tags=["osmosis"])
@@ -50,7 +51,8 @@ async def get_session_detail(session_id: str):
                 msg["options"] = json.loads(msg["options"])
             except (json.JSONDecodeError, TypeError):
                 msg["options"] = None
-    return JSONResponse({"success": True, "session": session, "messages": messages})
+    priors = get_priors_by_session(session_id)
+    return JSONResponse({"success": True, "session": session, "messages": messages, "priors": priors})
 
 
 @router.delete("/sessions/{session_id}")

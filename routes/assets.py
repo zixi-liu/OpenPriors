@@ -44,10 +44,12 @@ async def _embed_material_and_priors(material_id: str, content: str, priors: lis
 class UploadTextRequest(BaseModel):
     content: str
     source: Optional[str] = None
+    session_id: Optional[str] = None
 
 
 class UploadURLRequest(BaseModel):
     url: str
+    session_id: Optional[str] = None
 
 
 @router.post("/upload/text")
@@ -61,6 +63,7 @@ async def upload_text(request: UploadTextRequest):
             content=formatted,
             source_type="text",
             summary=result.get("summary", ""),
+            session_id=request.session_id or "",
         )
         priors = result.get("priors", [])
         ids = save_priors(priors, source_title=title, material_id=material_id)
@@ -112,6 +115,7 @@ async def upload_url(request: UploadURLRequest):
             url=request.url,
             summary=result.get("summary", ""),
             author=extracted.get("author", ""),
+            session_id=request.session_id or "",
         )
         priors = result.get("priors", [])
         ids = save_priors(priors, source_title=title, material_id=material_id)

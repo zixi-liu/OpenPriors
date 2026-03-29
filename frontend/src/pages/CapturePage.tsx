@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PriorCard from '../components/PriorCard.tsx'
-import ChatProvider, { ChatMessages, ChatInput } from '../components/ChatPanel.tsx'
+import ChatProvider, { ChatMessages, ChatInput, useChatContext } from '../components/ChatPanel.tsx'
 
 interface Prior {
   name: string
@@ -20,6 +20,7 @@ interface CaptureResult {
 export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: string | null; onAssetAdded?: () => void }) {
   const [titleValue, setTitleValue] = useState('')
   const titleRef = useRef<HTMLHeadingElement>(null)
+  const chatSessionIdRef = useRef<string | null>(sessionId || null)
 
   // Upload
   const [isUploadDropdownOpen, setIsUploadDropdownOpen] = useState(false)
@@ -78,7 +79,7 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
       const res = await fetch('/api/assets/upload/text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text, source: file.name }),
+        body: JSON.stringify({ content: text, source: file.name, session_id: chatSessionIdRef.current }),
       })
       const data = await res.json()
       if (data.success) { setResult({ title: data.title, summary: data.summary, priors: data.priors }); onAssetAdded?.() }
@@ -97,7 +98,7 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
       const res = await fetch('/api/assets/upload/url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: linkUrl }),
+        body: JSON.stringify({ url: linkUrl, session_id: chatSessionIdRef.current }),
       })
       const data = await res.json()
       if (data.success) { setResult({ title: data.title, summary: data.summary, priors: data.priors }); onAssetAdded?.() }
@@ -226,7 +227,7 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
   }
 
   return (
-    <ChatProvider existingSessionId={sessionId || undefined}>
+    <ChatProvider existingSessionId={sessionId || undefined} onSessionReady={(id) => { chatSessionIdRef.current = id }}>
     <div className="h-full flex flex-col">
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
@@ -331,6 +332,9 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
             </div>
           </div>
         )}
+
+        {/* Restored priors from session history */}
+        {!result && <RestoredPriors />}
 
       </div>
       {/* Chat messages in scroll area */}
@@ -460,5 +464,41 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
 
     </div>
     </ChatProvider>
+  )
+}
+
+function RestoredPriors() {
+  const { sessionPriors } = useChatContext()
+  if (!sessionPriors || sessionPriors.length === 0) return null
+
+  // Group priors by material_title
+  const grouped = new Map<string, any[]>()
+  for (const p of sessionPriors) {
+    const key = p.material_title || p.source_title || 'Untitled'
+    if (!grouped.has(key)) grouped.set(key, [])
+    grouped.get(key)!.push(p)
+  }
+
+  return (
+    <>
+      {Array.from(grouped.entries()).map(([title, priors]) => (
+        <div key={title} className="animate-fade-in space-y-6 ml-1">
+          <div>
+            <h2 className="text-sm font-bold tracking-wider" style={{ color: 'var(--op-font-color)', opacity: 0.7 }}>{title}</h2>
+          </div>
+          <div className="space-y-3">
+            {priors.map((prior: any, i: number) => (
+              <PriorCard key={i} prior={{
+                name: prior.name,
+                principle: prior.principle,
+                practice: prior.practice,
+                trigger: prior.trigger_context,
+                source: prior.source,
+              }} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
   )
 }

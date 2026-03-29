@@ -29,6 +29,7 @@ def _get_db() -> sqlite3.Connection:
             content TEXT NOT NULL,
             summary TEXT,
             author TEXT,
+            session_id TEXT,
             created_at TEXT NOT NULL
         )
     """)
@@ -84,15 +85,16 @@ def save_material(
     url: str = "",
     summary: str = "",
     author: str = "",
+    session_id: str = "",
 ) -> str:
     """Save a learning material (transcript, article text, etc.) and return its ID."""
     material_id = str(uuid.uuid4())[:8]
     now = datetime.now().isoformat()
     conn = _get_db()
     conn.execute(
-        """INSERT INTO materials (id, title, url, source_type, content, summary, author, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (material_id, title, url, source_type, content, summary, author, now),
+        """INSERT INTO materials (id, title, url, source_type, content, summary, author, session_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (material_id, title, url, source_type, content, summary, author, session_id, now),
     )
     conn.commit()
     conn.close()
@@ -221,6 +223,32 @@ def get_prior(prior_id: str) -> Optional[Dict[str, Any]]:
     row = conn.execute("SELECT * FROM priors WHERE id = ?", (prior_id,)).fetchone()
     conn.close()
     return dict(row) if row else None
+
+
+def get_priors_by_session(session_id: str) -> List[Dict[str, Any]]:
+    """Get all priors linked to materials from a specific session."""
+    conn = _get_db()
+    rows = conn.execute(
+        """SELECT p.*, m.title as material_title, m.summary as material_summary
+           FROM priors p
+           JOIN materials m ON p.material_id = m.id
+           WHERE m.session_id = ? AND p.status = 'active'
+           ORDER BY p.created_at ASC""",
+        (session_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_materials_by_session(session_id: str) -> List[Dict[str, Any]]:
+    """Get all materials created in a specific session."""
+    conn = _get_db()
+    rows = conn.execute(
+        "SELECT * FROM materials WHERE session_id = ? ORDER BY created_at ASC",
+        (session_id,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def record_practice(prior_id: str):
