@@ -20,6 +20,11 @@ const cadenceLabels: Record<string, string> = {
 
 export default function PlanCard({ title, goals: initialGoals }: PlanCardProps) {
   const [goals, setGoals] = useState(initialGoals)
+  const [submitted, setSubmitted] = useState(false)
+
+  const handleSubmit = () => {
+    setSubmitted(true)
+  }
 
   const updateDueDate = async (goalId: string, date: string) => {
     setGoals(prev => prev.map(g => g.id === goalId ? { ...g, due_date: date } : g))
@@ -77,10 +82,24 @@ export default function PlanCard({ title, goals: initialGoals }: PlanCardProps) 
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2 border-t border-[#E3E2E0]" style={{ background: 'rgba(0,0,0,0.02)' }}>
+      <div className="px-4 py-3 border-t border-[#E3E2E0] flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.02)' }}>
         <p className="text-xs" style={{ color: 'var(--op-font-color)', opacity: 0.4 }}>
-          ✅ Set due dates to get reminders
+          {submitted ? '✅ Goals submitted — reminders are set' : `${goals.filter(g => g.due_date).length}/${goals.length} dates set`}
         </p>
+        {!submitted && (
+          <button
+            onClick={handleSubmit}
+            disabled={goals.every(g => !g.due_date)}
+            className="px-4 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-30"
+            style={{
+              background: goals.some(g => g.due_date) ? 'var(--op-font-color)' : 'transparent',
+              color: goals.some(g => g.due_date) ? 'var(--op-bg)' : 'var(--op-font-color)',
+              opacity: goals.some(g => g.due_date) ? 1 : 0.3,
+            }}
+          >
+            Submit goals for reminders
+          </button>
+        )}
       </div>
     </div>
   )
