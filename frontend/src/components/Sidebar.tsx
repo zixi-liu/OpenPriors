@@ -151,13 +151,13 @@ export default function Sidebar({
                   <div className="relative flex-shrink-0">
                     <button
                       onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === material.id ? null : material.id) }}
-                      className="opacity-0 group-hover/item:opacity-100 p-0.5 rounded hover:bg-[#00000010]"
+                      className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-[#00000010]"
                       style={{ color: 'var(--op-font-color)', opacity: 0.4 }}
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                     </button>
                     {menuOpen === material.id && (
-                      <div ref={menuRef} className="absolute right-0 top-6 w-36 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1 z-50">
+                      <div ref={menuRef} className="fixed w-36 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1" style={{ zIndex: 9999, left: (sidebarRef.current?.getBoundingClientRect().right || 0) + 4, top: menuRef.current?.getBoundingClientRect().top || 0 }}>
                         <button
                           onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(material.title); setMenuOpen(null) }}
                           className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#F7F7F5]" style={{ color: 'var(--op-font-color)' }}
@@ -217,13 +217,13 @@ export default function Sidebar({
                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
                   <button
                     onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === session.id ? null : session.id) }}
-                    className="p-0.5 opacity-0 group-hover/session:opacity-100 transition-opacity rounded hover:bg-[#00000010]"
+                    className="p-1 opacity-0 group-hover/session:opacity-100 transition-opacity rounded hover:bg-[#00000010]"
                     style={{ color: 'var(--op-font-color)', opacity: 0.4 }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                   </button>
                   {menuOpen === session.id && (
-                    <div ref={menuRef} className="absolute right-0 top-6 w-36 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1 z-50">
+                    <div ref={menuRef} className="fixed w-36 bg-white border border-[#E3E2E0] rounded-lg shadow-lg py-1" style={{ zIndex: 9999, left: (sidebarRef.current?.getBoundingClientRect().right || 0) + 4 }}>
                       <button
                         onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(session.title); setMenuOpen(null) }}
                         className="w-full text-left px-3 py-1.5 text-xs hover:bg-[#F7F7F5]" style={{ color: 'var(--op-font-color)' }}
