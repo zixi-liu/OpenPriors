@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="OpenPriors" width="80" />
+  <img src="assets/logo.png" alt="OpenPriors" width="120" />
 </p>
 
 <h1 align="center">OpenPriors</h1>
