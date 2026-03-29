@@ -198,6 +198,7 @@ AGENT_TYPE_MAP = {
     "weekly_practice_plan": "planner",
     "roleplay": "coach",
     "integration_essay": "writer",
+    "custom": "helper",
 }
 
 
@@ -285,6 +286,9 @@ async def run_agent_turn(
         elif sub_agent == "writer":
             from core.agents.writer import run_writer_turn
             result = await run_writer_turn(clean_convo, clean_message, context)
+        elif sub_agent == "helper":
+            from core.agents.helper import run_helper_turn
+            result = await run_helper_turn(clean_convo, clean_message, context)
         else:
             result = None
 
