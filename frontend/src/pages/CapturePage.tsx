@@ -241,17 +241,11 @@ export default function CapturePage({ sessionId, onAssetAdded }: { sessionId?: s
             spellCheck={false}
             onBlur={() => setTitleValue(titleRef.current?.textContent || '')}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); titleRef.current?.blur() } }}
-            className="text-4xl font-bold outline-none cursor-text p-0 m-0"
+            className="text-4xl font-bold outline-none cursor-text p-0 m-0 empty:before:content-['New_Page'] empty:before:opacity-20"
             style={{ color: 'var(--op-font-color)' }}
           >
             {titleValue || ''}
           </h1>
-          {!titleValue && (
-            <span className="text-4xl font-bold pointer-events-none select-none absolute"
-              style={{ color: 'var(--op-font-color)', opacity: 0.2, marginTop: '-2.5rem' }}>
-              New Page
-            </span>
-          )}
         </div>
 
         {/* Action buttons */}

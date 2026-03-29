@@ -128,7 +128,7 @@ export default function App() {
             } catch {}
           }}
         />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-hidden">
           <Routes>
             <Route path="/" element={<Navigate to="/capture" />} />
             <Route path="/capture" element={<CapturePage key={pageKey} sessionId={activeSessionId} onAssetAdded={fetchAssets} />} />
