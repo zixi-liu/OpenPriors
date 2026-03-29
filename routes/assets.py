@@ -84,51 +84,15 @@ async def upload_text(request: UploadTextRequest):
 @router.post("/upload/url")
 async def upload_url(request: UploadURLRequest):
     try:
-        extracted = await extract_from_url(request.url)
-        content = extracted.get("content", "")
-        if not content:
-            return JSONResponse({"success": False, "error": "Could not extract content from URL"})
-
-        result = await extract_priors(content, source_hint=request.url)
-        title = extracted.get("title", "") or result.get("title", "")
-        is_youtube = "youtu" in request.url
-
-        detected_type = result.get("source_type", "other")
-
-        if is_youtube:
-            # YouTube: store the real transcript
-            stored_content = content
-        elif detected_type in ("book", "movie"):
-            # Books/movies: store summary + quotes
-            notable_quotes = result.get("notable_quotes", [])
-            quotes_section = "\n".join(f'"{q}"' for q in notable_quotes) if notable_quotes else ""
-            stored_content = f"{result.get('summary', '')}\n\n{quotes_section}".strip()
-        else:
-            # Articles, blogs, other: store raw content
-            stored_content = content
-
-        formatted_content = await format_for_display(stored_content)
-        material_id = save_material(
-            title=title,
-            content=formatted_content,
-            source_type="youtube" if is_youtube else "url",
-            url=request.url,
-            summary=result.get("summary", ""),
-            author=extracted.get("author", ""),
-            session_id=request.session_id or "",
+        from core.pipeline import process_url
+        result = await process_url(request.url, session_id=request.session_id or "")
+        if not result.get("success"):
+            return JSONResponse({"success": False, "error": result.get("error", "Unknown error")})
+        # Embed in background
+        await _embed_material_and_priors(
+            result["material_id"], "", result["priors"], result["title"]
         )
-        priors = result.get("priors", [])
-        ids = save_priors(priors, source_title=title, material_id=material_id)
-        await _embed_material_and_priors(material_id, stored_content, priors, title)
-        return JSONResponse({
-            "success": True,
-            "title": title,
-            "summary": result.get("summary", ""),
-            "priors_count": len(ids),
-            "priors": priors,
-            "ids": ids,
-            "material_id": material_id,
-        })
+        return JSONResponse(result)
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
