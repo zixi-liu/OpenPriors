@@ -339,10 +339,9 @@ export default function CapturePage() {
         )}
 
       </div>
-      </div>
-
-      {/* Chat input — sticky bottom */}
+      {/* Chat — messages in scroll area */}
       <ChatPanel />
+      </div>
 
       {/* Link Modal */}
       {linkModalOpen && (

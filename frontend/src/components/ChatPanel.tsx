@@ -93,7 +93,7 @@ export default function ChatPanel() {
     <>
       {/* Messages */}
       {messages.length > 0 && (
-        <div className="max-w-2xl mx-auto w-full px-6 pb-4 space-y-4">
+        <div className="max-w-2xl mx-auto w-full px-6 pt-6 pb-4 space-y-4">
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className="max-w-[85%]">
@@ -141,7 +141,7 @@ export default function ChatPanel() {
       )}
 
       {/* Input — sticky bottom */}
-      <div className="px-6 py-3 flex-shrink-0">
+      <div className="sticky bottom-0 px-6 py-3" style={{ background: 'var(--op-bg)' }}>
         <div className="max-w-2xl mx-auto">
           <div className="relative">
             <textarea
