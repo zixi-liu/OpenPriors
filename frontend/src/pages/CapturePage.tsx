@@ -454,19 +454,6 @@ export default function CapturePage() {
         </div>
       )}
 
-      {/* Osmosis Session Modal */}
-      {osmosisModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setOsmosisModalOpen(false)} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-8 text-center">
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--op-font-color)' }}>Osmosis Session</h3>
-            <p className="text-sm mb-6" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>
-              AI will help you connect your learning materials with your daily life and goals. Coming soon.
-            </p>
-            <button onClick={() => setOsmosisModalOpen(false)} className="px-4 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-800">Close</button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

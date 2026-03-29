@@ -165,7 +165,7 @@ export default function Sidebar({
       {!isCollapsed && (
       <div className="px-2 pb-2">
         <button
-          onClick={onNewSession || (() => navigate('/capture'))}
+          onClick={onNewSession || (() => navigate('/osmosis'))}
           className="flex items-center gap-1.5 rounded text-sm hover:bg-[#00000008] transition-colors w-full px-2 py-1.5"
           style={{ color: 'var(--op-font-color)', opacity: 0.7 }}
         >

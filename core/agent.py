@@ -216,7 +216,7 @@ async def run_agent_turn(
     max_iterations = 8
     for _ in range(max_iterations):
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="o3-mini",
             messages=messages,
             tools=TOOLS,
             temperature=0.7,
