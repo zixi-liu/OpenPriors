@@ -95,7 +95,13 @@ async def format_for_display(content: str) -> str:
         temperature=0.3,
         max_tokens=4000,
     )
-    return response.content.strip()
+    text = response.content.strip()
+    # Strip markdown code fences if LLM wrapped the output
+    if text.startswith('```'):
+        text = text.split('\n', 1)[1] if '\n' in text else text[3:]
+        if text.endswith('```'):
+            text = text[:-3].strip()
+    return text
 
 
 async def extract_priors(content: str, source_hint: str = "") -> Dict[str, Any]:
