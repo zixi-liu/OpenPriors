@@ -245,7 +245,7 @@ export default function CapturePage() {
           {!titleValue && (
             <span className="text-4xl font-bold pointer-events-none select-none absolute"
               style={{ color: 'var(--op-font-color)', opacity: 0.2, marginTop: '-2.5rem' }}>
-              Untitled
+              New Page
             </span>
           )}
         </div>
