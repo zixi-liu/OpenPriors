@@ -27,7 +27,7 @@ export function ChatMessages() {
         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
           <div className="max-w-[85%]">
             <div
-              className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+              className={`rounded-2xl px-4 py-2.5 text-base leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-gray-900 text-white rounded-br-md'
                   : 'bg-[#F7F7F5] rounded-bl-md'
@@ -45,8 +45,8 @@ export function ChatMessages() {
                     onClick={() => selectOption(opt)}
                     className="w-full text-left p-2.5 rounded-lg border border-[#E3E2E0] hover:bg-[#F7F7F5] transition-colors"
                   >
-                    <p className="text-sm font-medium" style={{ color: 'var(--op-font-color)' }}>{opt.title}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>{opt.description}</p>
+                    <p className="text-base font-medium" style={{ color: 'var(--op-font-color)' }}>{opt.title}</p>
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>{opt.description}</p>
                   </button>
                 ))}
               </div>
