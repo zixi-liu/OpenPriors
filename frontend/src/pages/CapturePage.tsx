@@ -226,7 +226,9 @@ export default function CapturePage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-hide">
+    <div className="h-full flex flex-col">
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
       <div className="max-w-4xl mx-auto w-full px-6 pt-8 pb-8 space-y-8">
         {/* Title */}
         <div className="pt-10">
@@ -336,9 +338,11 @@ export default function CapturePage() {
           </div>
         )}
 
-        {/* Chat Panel — agent conversation */}
-        <ChatPanel />
       </div>
+      </div>
+
+      {/* Chat input — sticky bottom */}
+      <ChatPanel />
 
       {/* Link Modal */}
       {linkModalOpen && (

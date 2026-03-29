@@ -17,26 +17,19 @@ export default function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages, loading])
 
   // Create session and get greeting on mount
   useEffect(() => {
     const init = async () => {
       setLoading(true)
       try {
-        // Create session
         const createRes = await fetch('/api/osmosis/sessions', { method: 'POST' })
         const createData = await createRes.json()
         if (!createData.success) return
         const sid = createData.session_id
         setSessionId(sid)
 
-        // Get greeting
         const chatRes = await fetch('/api/osmosis/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -97,79 +90,91 @@ export default function ChatPanel() {
   }
 
   return (
-    <div className="mt-6 ml-1 border border-[#E3E2E0] rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: '60vh' }}>
+    <>
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-hide">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className="max-w-[85%]">
-              <div
-                className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-gray-900 text-white rounded-br-md'
-                    : 'bg-[#F7F7F5] rounded-bl-md'
-                }`}
-                style={msg.role === 'assistant' ? { color: 'var(--op-font-color)' } : {}}
-              >
-                {msg.content}
-              </div>
-
-              {msg.options && msg.options.length > 0 && (
-                <div className="mt-2 space-y-1.5">
-                  {msg.options.map((opt, j) => (
-                    <button
-                      key={j}
-                      onClick={() => selectOption(opt)}
-                      className="w-full text-left p-2.5 rounded-lg border border-[#E3E2E0] hover:bg-[#F7F7F5] transition-colors"
-                    >
-                      <p className="text-sm font-medium" style={{ color: 'var(--op-font-color)' }}>{opt.title}</p>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>{opt.description}</p>
-                    </button>
-                  ))}
+      {messages.length > 0 && (
+        <div className="max-w-2xl mx-auto w-full px-6 pb-4 space-y-4">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className="max-w-[85%]">
+                <div
+                  className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-gray-900 text-white rounded-br-md'
+                      : 'bg-[#F7F7F5] rounded-bl-md'
+                  }`}
+                  style={msg.role === 'assistant' ? { color: 'var(--op-font-color)' } : {}}
+                >
+                  {msg.content}
                 </div>
+
+                {msg.options && msg.options.length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    {msg.options.map((opt, j) => (
+                      <button
+                        key={j}
+                        onClick={() => selectOption(opt)}
+                        className="w-full text-left p-2.5 rounded-lg border border-[#E3E2E0] hover:bg-[#F7F7F5] transition-colors"
+                      >
+                        <p className="text-sm font-medium" style={{ color: 'var(--op-font-color)' }}>{opt.title}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>{opt.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-[#F7F7F5] rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Input — sticky bottom */}
+      <div className="px-6 py-3 flex-shrink-0">
+        <div className="max-w-2xl mx-auto">
+          <div className="relative">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your learnings..."
+              disabled={loading}
+              rows={1}
+              className="w-full text-sm px-4 pt-3 pb-10 rounded-xl border border-[#E3E2E0] focus:outline-none focus:border-gray-400 disabled:opacity-50 resize-none"
+              style={{ background: 'var(--op-bg)', color: 'var(--op-font-color)', minHeight: '56px' }}
+            />
+            <div className="absolute right-3 bottom-3">
+              {input.trim() ? (
+                <button
+                  onClick={() => sendMessage()}
+                  disabled={loading}
+                  className="p-2 bg-gray-900 text-white rounded-full hover:bg-gray-800 disabled:opacity-40 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              ) : (
+                <span className="text-xs" style={{ color: 'var(--op-font-color)', opacity: 0.3 }}>
+                  Enter to send
+                </span>
               )}
             </div>
           </div>
-        ))}
-
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-[#F7F7F5] rounded-2xl rounded-bl-md px-4 py-3">
-              <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Input */}
-      <div className="border-t border-[#E3E2E0] px-3 py-3">
-        <div className="flex gap-2 items-end">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your learnings..."
-            disabled={loading}
-            rows={1}
-            className="flex-1 text-sm px-3 py-2 rounded-lg border border-[#E3E2E0] focus:outline-none focus:border-gray-400 disabled:opacity-50 resize-none"
-            style={{ background: 'var(--op-bg)', color: 'var(--op-font-color)' }}
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={loading || !input.trim()}
-            className="px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-40 transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M14 2L7 9M14 2l-4.5 12-2-5.5L2 6.5 14 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
         </div>
       </div>
-    </div>
+    </>
   )
 }
