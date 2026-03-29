@@ -16,12 +16,42 @@ export default function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [greeted, setGreeted] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, loading])
+
+  // Auto-greet on mount
+  useEffect(() => {
+    if (greeted) return
+    setGreeted(true)
+    setLoading(true)
+
+    fetch('/api/osmosis/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversation: [],
+        message: '[SYSTEM] User just opened a new session. Greet them briefly, mention their most recently added learning material if any, and ask what they are interested in working on today.',
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setMessages([{ role: 'assistant', content: data.message, options: data.options }])
+        }
+      })
+      .catch(() => {
+        setMessages([{ role: 'assistant', content: "Hey! What would you like to work on today?" }])
+      })
+      .finally(() => {
+        setLoading(false)
+        setTimeout(() => inputRef.current?.focus(), 100)
+      })
+  }, [])
 
   const sendMessage = async (text?: string) => {
     const userMsg = (text || input).trim()
@@ -61,45 +91,13 @@ export default function ChatPanel() {
     }
   }
 
-  // Empty state
-  if (messages.length === 0 && !loading) {
-    return (
-      <div className="mt-8 ml-1">
-        <div className="border border-[#E3E2E0] rounded-xl p-6">
-          <h3 className="text-sm font-bold tracking-wider mb-3" style={{ color: 'var(--op-font-color)', opacity: 0.7 }}>
-            Start a conversation
-          </h3>
-          <p className="text-sm mb-4" style={{ color: 'var(--op-font-color)', opacity: 0.5 }}>
-            Ask the AI to help you integrate your learnings into your life. It can search your materials, find connections, and suggest practice plans.
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            {[
-              "Help me apply what I've learned this week",
-              "Find connections across my materials",
-              "Create a practice plan for me",
-            ].map((suggestion, i) => (
-              <button
-                key={i}
-                onClick={() => sendMessage(suggestion)}
-                className="px-3 py-2 text-xs rounded-lg border border-[#E3E2E0] hover:bg-[#F7F7F5] transition-colors"
-                style={{ color: 'var(--op-font-color)' }}
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="mt-6 ml-1 border border-[#E3E2E0] rounded-xl overflow-hidden flex flex-col" style={{ maxHeight: '60vh' }}>
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-hide">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%]`}>
+            <div className="max-w-[85%]">
               <div
                 className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                   msg.role === 'user'
