@@ -133,7 +133,7 @@ export default function Sidebar({
                       </svg>
                     )}
                   </button>
-                  <span className="flex-1 text-xs truncate" style={{ opacity: 0.7 }}>
+                  <span className="flex-1 text-sm truncate" style={{ opacity: 0.7 }}>
                     {material.title}
                   </span>
                   {onDeleteMaterial && (
